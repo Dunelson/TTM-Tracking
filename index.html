@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autograph Vault | Pro Collector</title>
+    <title>Autograph Vault | J. Nelson Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -34,11 +34,14 @@
         /* Stats Row */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); }
+        .stat-value { font-size: 24px; font-weight: 800; display: block; margin-top: 5px; font-family: 'JetBrains Mono'; }
 
-        /* Search & Filter Bar */
-        .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
-        .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; }
+        /* Filter Bar */
+        .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+        .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; min-width: 250px; }
         .sort-select { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 11px; border-radius: 10px; cursor: pointer; }
+        .btn-data { background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-dim); padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
+        .btn-data:hover { color: white; border-color: var(--primary); }
 
         /* Gallery Grid */
         .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -49,19 +52,19 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .gold-star { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 50%; color: var(--gold); font-size: 12px; }
 
-        /* Profile View */
+        /* Profile Layout */
         .profile-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
-        .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; }
+        .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; }
         .p-img-frame img { width: 100%; display: block; }
-        .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 15px; width: 100%; text-align: center; box-sizing: border-box; }
+        .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 15px; width: 100%; text-align: center; box-sizing: border-box; }
         
-        /* Addresses Table */
+        /* Tables */
         .address-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-        .address-table th { text-align: left; padding: 15px; background: rgba(0,0,0,0.2); font-size: 11px; color: var(--text-dim); }
+        .address-table th { text-align: left; padding: 15px; background: rgba(0,0,0,0.2); font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
         .address-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
 
         .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-        input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; }
+        input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; font-family: inherit; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; backdrop-filter: blur(4px); }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); width: 450px; border-radius: 16px; padding: 30px; border: 1px solid var(--border); }
     </style>
@@ -91,7 +94,11 @@
 
     <div id="view-summary" class="view-section active">
         <div class="filter-bar">
-            <input type="text" id="searchBar" class="search-input" placeholder="Search by name, role, or item type..." oninput="renderGallery()">
+            <input type="text" id="searchBar" class="search-input" placeholder="Search collection..." oninput="renderGallery()">
+            
+            <button class="btn-data" onclick="exportCSV()">EXPORT CSV</button>
+            <label class="btn-data">IMPORT CSV <input type="file" id="csvImport" accept=".csv" onchange="importCSV(event)" style="display:none"></label>
+            
             <select id="sortOrder" class="sort-select" onchange="renderGallery()">
                 <option value="newest">Newest First</option>
                 <option value="status">Group by Status</option>
@@ -105,10 +112,10 @@
         <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700; display:flex; align-items:center; gap:8px;">← BACK TO COLLECTION</button>
         <div class="profile-grid">
             <div>
-                <div class="p-img-frame"><img id="p-img" src=""></div>
-                <label class="upload-btn">UPLOAD ITEM PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)" style="display:none"></label>
+                <div class="p-img-frame" id="p-img-container"><img id="p-img" src=""></div>
+                <label class="upload-btn">UPLOAD PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)" style="display:none"></label>
                 <div style="margin-top:20px;">
-                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">MARK STATUS</label>
+                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">ITEM STATUS</label>
                     <select id="p-status-select" onchange="updateItemStatus(this.value)" style="margin-top:5px;">
                         <option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>
                     </select>
@@ -118,28 +125,29 @@
                 <h1 id="p-name" style="margin:0"></h1>
                 <p id="p-item-type" style="color:var(--primary); font-weight:700; font-size:20px; margin: 5px 0 25px 0;"></p>
                 <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px;">
-                    <h3 style="margin-top:0; font-size:14px; color:var(--primary)">SIGNER BIO</h3>
-                    <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading...</p>
+                    <h3 style="margin-top:0; font-size:12px; color:var(--primary); text-transform:uppercase;">Signer Bio</h3>
+                    <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading bio...</p>
                 </div>
                 <div style="margin-top:25px;">
                     <label style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION NOTES / ADDRESS</label>
-                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add private notes about this item..."></textarea>
+                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add private notes or tracking info..."></textarea>
                 </div>
-                <button onclick="deleteEntry()" style="margin-top:30px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px;">Delete Item</button>
+                <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px;">Permanently Delete Item</button>
             </div>
         </div>
     </div>
 
     <div id="view-stats" class="view-section">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div class="stat-card"><h3>STATUS SPREAD</h3><canvas id="chartStatus"></canvas></div>
-            <div class="stat-card"><h3>CATEGORIES</h3><canvas id="chartCats"></canvas></div>
+            <div class="stat-card"><h3>STATUS DISTRIBUTION</h3><canvas id="chartStatus"></canvas></div>
+            <div class="stat-card"><h3>COLLECTION CATEGORIES</h3><canvas id="chartCats"></canvas></div>
         </div>
     </div>
 
     <div id="view-addresses" class="view-section">
+        <div class="filter-bar"><input type="text" id="addressSearch" class="search-input" placeholder="Search addresses..." oninput="renderAddressTable()"></div>
         <table class="address-table">
-            <thead><tr><th>RECIPIENT</th><th>ADDRESS / NOTES</th></tr></thead>
+            <thead><tr><th>Recipient</th><th>Address / Notes</th><th style="text-align:right">Actions</th></tr></thead>
             <tbody id="addressBody"></tbody>
         </table>
     </div>
@@ -147,17 +155,17 @@
 
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
-        <h2 style="margin-top:0">New Collection Entry</h2>
+        <h2 style="margin-top:0; color:var(--primary)">Add New Item</h2>
         <input id="f_name" placeholder="Signer Name" style="margin-bottom:15px">
-        <input id="f_item" placeholder="Item (e.g. 8x10, Custom 4x6, Trading Card)" style="margin-bottom:15px">
+        <input id="f_item" placeholder="Item (e.g. 8x10, Custom 4x6)" style="margin-bottom:15px">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px">
             <select id="f_source"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
             <select id="f_role"><option>Actor</option><option>Athlete</option><option>Musician</option><option>Other</option></select>
         </div>
-        <textarea id="f_address" placeholder="Mailing Address" rows="3"></textarea>
+        <textarea id="f_address" placeholder="Mailing Address or Initial Notes" rows="3"></textarea>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-            <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim);">CANCEL</button>
-            <button onclick="addEntry()" class="btn-primary">SAVE TO VAULT</button>
+            <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim); cursor:pointer;">CANCEL</button>
+            <button onclick="addEntry()" class="btn-primary">SAVE ENTRY</button>
         </div>
     </div>
 </div>
@@ -212,17 +220,20 @@
         switchView('profile');
         document.getElementById("p-img").src = currentItem.img_url || 'https://via.placeholder.com/400x500?text=Upload+Photo';
         document.getElementById("p-name").innerText = currentItem.name;
-        document.getElementById("p-item-type").innerText = currentItem.item_type || "Item Detail Missing";
+        document.getElementById("p-item-type").innerText = currentItem.item_type || "Item Type Not Specified";
         document.getElementById("p-notes").value = currentItem.address || "";
         document.getElementById("p-status-select").value = currentItem.status;
         
-        document.getElementById("p-bio").innerText = "Fetching bio...";
-        const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
-        const json = await res.json();
-        if(json.results?.[0]) {
-            const det = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
-            document.getElementById("p-bio").innerText = det.biography || "No bio found.";
-        } else { document.getElementById("p-bio").innerText = "Not found on TMDB."; }
+        // Fetch Bio
+        document.getElementById("p-bio").innerText = "Searching TMDB...";
+        try {
+            const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
+            const json = await res.json();
+            if(json.results?.[0]) {
+                const det = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
+                document.getElementById("p-bio").innerText = det.biography || "Bio not available.";
+            } else { document.getElementById("p-bio").innerText = "Signer not found on TMDB."; }
+        } catch { document.getElementById("p-bio").innerText = "Error loading biography."; }
     }
 
     async function handleFileUpload(e) {
@@ -238,14 +249,58 @@
         reader.readAsDataURL(file);
     }
 
-    async function updateItemStatus(status) {
-        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
-        loadData();
+    async function quickEditAddress(id) {
+        const item = allData.find(x => x.id === id);
+        const newVal = prompt(`Update address/notes for ${item.name}:`, item.address || "");
+        if(newVal !== null) {
+            await sb.from("Tracking").update({ address: newVal }).eq("id", id);
+            loadData();
+        }
     }
 
-    async function updateNotes() {
-        await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
-        loadData();
+    function renderAddressTable() {
+        const query = document.getElementById("addressSearch")?.value.toLowerCase() || "";
+        const filtered = allData.filter(d => (d.name + d.address).toLowerCase().includes(query));
+        document.getElementById("addressBody").innerHTML = filtered.map(d => `
+            <tr>
+                <td><b>${d.name}</b></td>
+                <td style="font-family:JetBrains Mono; color:var(--text-dim)">${d.address || '—'}</td>
+                <td style="text-align:right">
+                    <button onclick="quickEditAddress('${d.id}')" style="background:none; border:1px solid var(--primary); color:var(--primary); padding:6px 12px; border-radius:6px; cursor:pointer; font-size:10px;">EDIT</button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    function exportCSV() {
+        const headers = ["name", "role_type", "item_type", "source", "address", "status", "date_sent", "date_received", "img_url"];
+        const rows = allData.map(d => headers.map(h => `"${(d[h] || '').toString().replace(/"/g, '""')}"`).join(","));
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+        const link = document.createElement("a");
+        link.href = encodeURI(csvContent);
+        link.download = `vault_export_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+    }
+
+    function importCSV(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const lines = e.target.result.split("\n");
+            const headers = lines[0].split(",").map(h => h.trim().replace(/"/g, ''));
+            const newEntries = lines.slice(1).filter(l => l.trim()).map(line => {
+                const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+                const obj = {};
+                headers.forEach((h, i) => { if(h !== 'id') obj[h] = values[i]; });
+                return obj;
+            });
+            if(confirm(`Import ${newEntries.length} items?`)) {
+                await sb.from("Tracking").insert(newEntries);
+                loadData();
+            }
+        };
+        reader.readAsText(file);
     }
 
     function updateStats() {
@@ -256,10 +311,14 @@
         document.getElementById('s-mix').innerText = `${allData.filter(d => d.source==='TTM').length} TTM / ${allData.filter(d => d.source==='Purchased').length} Purchased`;
     }
 
-    function renderAddressTable() {
-        document.getElementById("addressBody").innerHTML = allData.map(d => `
-            <tr><td><b>${d.name}</b></td><td style="font-family:JetBrains Mono; color:var(--text-dim)">${d.address || '—'}</td></tr>
-        `).join("");
+    async function updateItemStatus(status) {
+        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
+        loadData();
+    }
+
+    async function updateNotes() {
+        await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
+        loadData();
     }
 
     async function addEntry() {
@@ -281,16 +340,16 @@
         document.getElementById(`view-${v}`).classList.add('active');
         if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('active');
         if(v === 'stats') {
-            const ctx1 = document.getElementById('chartStatus').getContext('2d');
-            const ctx2 = document.getElementById('chartCats').getContext('2d');
             if(charts.a) charts.a.destroy(); if(charts.b) charts.b.destroy();
-            charts.a = new Chart(ctx1, { type: 'doughnut', data: { labels: ['Success', 'Pending', 'RTS'], datasets: [{ data: [allData.filter(d => d.status==='received').length, allData.filter(d=>d.status==='pending').length, allData.filter(d=>d.status==='rts').length], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] }});
-            charts.b = new Chart(ctx2, { type: 'bar', data: { labels: ['Actor', 'Athlete', 'Musician', 'Other'], datasets: [{ data: [allData.filter(d=>d.role_type==='Actor').length, allData.filter(d=>d.role_type==='Athlete').length, allData.filter(d=>d.role_type==='Musician').length, allData.filter(d=>d.role_type==='Other').length], backgroundColor: '#818cf8' }] }, options: { indexAxis: 'y'}});
+            const s = { rec: allData.filter(d=>d.status==='received'||d.source==='Purchased').length, pen: allData.filter(d=>d.status==='pending').length, rts: allData.filter(d=>d.status==='rts').length };
+            charts.a = new Chart(document.getElementById('chartStatus'), { type: 'doughnut', data: { labels: ['Success', 'Pending', 'RTS'], datasets: [{ data: [s.rec, s.pen, s.rts], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] }});
+            const cats = ['Actor', 'Athlete', 'Musician', 'Other'];
+            charts.b = new Chart(document.getElementById('chartCats'), { type: 'bar', data: { labels: cats, datasets: [{ data: cats.map(c => allData.filter(d=>d.role_type===c).length), backgroundColor: '#818cf8' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } } }});
         }
     }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "block" : "none"; }
-    async function deleteEntry() { if(confirm("Delete?")) { await sb.from("Tracking").delete().eq("id", currentItem.id); switchView('summary'); loadData(); } }
+    async function deleteEntry() { if(confirm("Permanently delete this item?")) { await sb.from("Tracking").delete().eq("id", currentItem.id); switchView('summary'); loadData(); } }
 
     loadData();
 </script>
