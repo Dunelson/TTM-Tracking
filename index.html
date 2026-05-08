@@ -22,6 +22,7 @@
             --unsigned: #fbbf24;
             --total: #a78bfa;
             --success-row: rgba(74, 222, 128, 0.08);
+            --gold: #fbbf24;
         }
 
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
@@ -57,6 +58,11 @@
         td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
         
         .row-received { background-color: var(--success-row) !important; border-left: 4px solid var(--received); }
+        
+        /* Gold Star Styling */
+        .gold-star { color: var(--gold); margin-right: 8px; font-size: 14px; display: inline-block; animation: starPulse 2s infinite ease-in-out; }
+        @keyframes starPulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 1; text-shadow: 0 0 8px var(--gold); } 100% { transform: scale(1); opacity: 0.8; } }
+
         .badge-select { background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: inherit; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
         .inline-input { background: none; border: 1px solid transparent; color: white; padding: 4px; border-radius: 4px; width: 130px; font-family: inherit; font-size: 12px; cursor: pointer; }
 
@@ -193,7 +199,10 @@
             const wait = getWaitValue(d);
             return `
             <tr class="${isReceived ? 'row-received' : ''}">
-                <td><span class="actor-link" onclick="openBio('${d.name}')">${d.name}</span></td>
+                <td>
+                    ${isReceived ? '<span class="gold-star">★</span>' : ''}
+                    <span class="actor-link" onclick="openBio('${d.name}')">${d.name}</span>
+                </td>
                 <td style="color:var(--text-dim)">${d.role_type}</td>
                 <td><input type="date" class="inline-input" value="${d.date_sent || ''}" onchange="updateField('${d.id}', 'date_sent', this.value)"></td>
                 <td>
@@ -223,52 +232,28 @@
 
     function applyFilters() {
         const query = document.getElementById("searchBar").value.toLowerCase();
-        let filtered = allData.filter(d => 
-            (d.name?.toLowerCase().includes(query)) || (d.role_type?.toLowerCase().includes(query))
-        );
-        
+        let filtered = allData.filter(d => (d.name?.toLowerCase().includes(query)) || (d.role_type?.toLowerCase().includes(query)));
         filtered.sort((a, b) => {
-            let valA, valB;
             if (sortState.col === 'wait_time') {
-                valA = getWaitValue(a);
-                valB = getWaitValue(b);
-                return sortState.dir === 'asc' ? valA - valB : valB - valA;
-            } else {
-                valA = (a[sortState.col] || '').toString().toLowerCase();
-                valB = (b[sortState.col] || '').toString().toLowerCase();
-                return sortState.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                return sortState.dir === 'asc' ? getWaitValue(a) - getWaitValue(b) : getWaitValue(b) - getWaitValue(a);
             }
+            let valA = (a[sortState.col] || '').toString().toLowerCase();
+            let valB = (b[sortState.col] || '').toString().toLowerCase();
+            return sortState.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
         });
         renderTables(filtered);
     }
 
     async function addEntry() {
         const nameInput = document.getElementById("f_name");
-        const roleInput = document.getElementById("f_role");
         const dateInput = document.getElementById("f_datesent");
         const addrInput = document.getElementById("f_address");
-
         if(!nameInput.value) return;
-
-        await sb.from("Tracking").insert([{
-            name: nameInput.value,
-            role_type: roleInput.value,
-            date_sent: dateInput.value || null,
-            address: addrInput.value,
-            status: 'pending'
-        }]);
-
-        // THE CLEAR: Reset fields for the next entry
-        nameInput.value = "";
-        dateInput.value = "";
-        addrInput.value = "";
-        // roleInput stays on last choice usually helps, but we can reset if you prefer.
-
-        toggleModal('addModal', false);
-        loadData();
+        await sb.from("Tracking").insert([{ name: nameInput.value, role_type: document.getElementById("f_role").value, date_sent: dateInput.value || null, address: addrInput.value, status: 'pending' }]);
+        nameInput.value = ""; dateInput.value = ""; addrInput.value = "";
+        toggleModal('addModal', false); loadData();
     }
 
-    // Helper functions (getStatusColor, updateStatus, updateField, etc.) remain unchanged
     function getStatusColor(s) { return s==='pending'?'var(--pending)':s==='received'?'var(--received)':s==='rts'?'var(--rts)':'var(--unsigned)'; }
     async function updateStatus(id, status) {
         const val = { status };
