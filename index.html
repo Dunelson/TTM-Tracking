@@ -3,128 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autograph Vault | Multi-Item Edition</title>
+    <title>Autograph Vault | Pro Collector</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0f172a; --card-bg: #1e293b; --primary: #818cf8;
             --border: #334155; --text: #f1f5f9; --text-dim: #94a3b8;
-            --received: #4ade80; --rts: #fb7185;
+            --received: #4ade80; --rts: #fb7185; --pending: #38bdf8; --gold: #fbbf24;
         }
 
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
         
+        /* Navigation */
         .nav-bar { 
-            background: rgba(30, 41, 59, 0.9); padding: 15px 40px; 
-            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(10px);
+            padding: 15px 40px; display: flex; align-items: center; justify-content: space-between;
             border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
         }
+        .nav-left { display: flex; align-items: center; gap: 30px; }
+        .logo { font-weight: 900; font-size: 18px; color: var(--primary); letter-spacing: 1.5px; text-transform: uppercase; }
+        .nav-item { color: var(--text-dim); text-decoration: none; font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: 0.2s; }
+        .nav-item.active { color: var(--text); background: var(--border); }
 
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 40px; }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 40px; }
         .view-section { display: none; }
         .view-section.active { display: block; }
 
-        /* Grid for Multiple Items */
-        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .item-card { 
-            background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); 
-            overflow: hidden; transition: 0.3s; cursor: pointer;
-        }
-        .item-card:hover { transform: translateY(-5px); border-color: var(--primary); }
-        .card-img { width: 100%; aspect-ratio: 1/1; background: #000; object-fit: cover; }
-        .card-info { padding: 15px; }
-        .card-name { font-weight: 700; font-size: 16px; margin-bottom: 5px; display: block; }
-        .card-sub { color: var(--text-dim); font-size: 12px; }
+        /* Stats Row */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); }
 
-        /* Profile Layout */
+        /* Search & Filter Bar */
+        .filter-bar { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
+        .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; }
+        .sort-select { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 11px; border-radius: 10px; cursor: pointer; }
+
+        /* Gallery Grid */
+        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+        .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.2s; cursor: pointer; position: relative; }
+        .item-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        .card-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
+        .card-content { padding: 15px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .gold-star { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 50%; color: var(--gold); font-size: 12px; }
+
+        /* Profile View */
         .profile-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
-        .profile-img-container { position: relative; width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); }
-        .profile-img-container img { width: 100%; display: block; }
+        .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; }
+        .p-img-frame img { width: 100%; display: block; }
+        .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 15px; width: 100%; text-align: center; box-sizing: border-box; }
         
-        /* Upload Button Styling */
-        .upload-label {
-            display: inline-block; background: var(--primary); color: white; 
-            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 15px;
-        }
-        #fileInput { display: none; }
+        /* Addresses Table */
+        .address-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        .address-table th { text-align: left; padding: 15px; background: rgba(0,0,0,0.2); font-size: 11px; color: var(--text-dim); }
+        .address-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
 
         .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-        input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; margin-top: 5px;}
-        
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; }
-        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); width: 450px; border-radius: 16px; padding: 30px; }
+        input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); width: 450px; border-radius: 16px; padding: 30px; border: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
 <nav class="nav-bar">
-    <div style="font-weight:900; color:var(--primary)">AUTOGRAPH VAULT</div>
-    <div style="display:flex; gap:15px;">
-        <button class="nav-item active" style="background:none; border:none; color:inherit; cursor:pointer;" onclick="switchView('summary')">COLLECTION</button>
-        <button class="btn-primary" onclick="toggleModal('addModal', true)">+ ADD ITEM</button>
+    <div class="nav-left">
+        <div class="logo">Autograph Vault</div>
+        <div class="nav-links">
+            <div id="nav-summary" class="nav-item active" onclick="switchView('summary')">COLLECTION</div>
+            <div id="nav-stats" class="nav-item" onclick="switchView('stats')">STATS</div>
+            <div id="nav-addresses" class="nav-item" onclick="switchView('addresses')">ADDRESSES</div>
+        </div>
     </div>
+    <button class="btn-primary" onclick="toggleModal('addModal', true)">+ ADD NEW ITEM</button>
 </nav>
 
 <div class="container">
     
+    <div class="stats-grid">
+        <div class="stat-card" style="border-top-color: var(--primary)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">TOTAL ITEMS</span><span class="stat-value" id="s-total">0</span></div>
+        <div class="stat-card" style="border-top-color: var(--received)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">SUCCESSES</span><span class="stat-value" id="s-success" style="color:var(--received)">0</span></div>
+        <div class="stat-card" style="border-top-color: var(--pending)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">PENDING</span><span class="stat-value" id="s-pending" style="color:var(--pending)">0</span></div>
+        <div class="stat-card" style="border-top-color: var(--gold)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">MIX</span><span id="s-mix" style="display:block; margin-top:10px; font-size:13px; font-weight:600;">—</span></div>
+    </div>
+
     <div id="view-summary" class="view-section active">
-        <div class="item-grid" id="galleryGrid">
-            </div>
+        <div class="filter-bar">
+            <input type="text" id="searchBar" class="search-input" placeholder="Search by name, role, or item type..." oninput="renderGallery()">
+            <select id="sortOrder" class="sort-select" onchange="renderGallery()">
+                <option value="newest">Newest First</option>
+                <option value="status">Group by Status</option>
+                <option value="alpha">Name (A-Z)</option>
+            </select>
+        </div>
+        <div class="item-grid" id="galleryGrid"></div>
     </div>
 
     <div id="view-profile" class="view-section">
-        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700;">← BACK TO COLLECTION</button>
-        
+        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700; display:flex; align-items:center; gap:8px;">← BACK TO COLLECTION</button>
         <div class="profile-grid">
             <div>
-                <div class="profile-img-container">
-                    <img id="p-img" src="https://via.placeholder.com/400x500?text=No+Photo+Uploaded">
+                <div class="p-img-frame"><img id="p-img" src=""></div>
+                <label class="upload-btn">UPLOAD ITEM PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)" style="display:none"></label>
+                <div style="margin-top:20px;">
+                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">MARK STATUS</label>
+                    <select id="p-status-select" onchange="updateItemStatus(this.value)" style="margin-top:5px;">
+                        <option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>
+                    </select>
                 </div>
-                
-                <label class="upload-label">
-                    UPLOAD PHOTO
-                    <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)">
-                </label>
-                <p style="font-size:11px; color:var(--text-dim); margin-top:10px;">Select a file from your device to save to the vault.</p>
             </div>
-
             <div>
                 <h1 id="p-name" style="margin:0"></h1>
-                <p id="p-item" style="color:var(--primary); font-weight:700; font-size:18px; margin-top:5px;"></p>
-                
-                <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin-top:20px;">
-                    <h3 style="margin-top:0">Signer Bio</h3>
-                    <p id="p-bio" style="color:var(--text-dim); line-height:1.6;">Loading...</p>
+                <p id="p-item-type" style="color:var(--primary); font-weight:700; font-size:20px; margin: 5px 0 25px 0;"></p>
+                <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px;">
+                    <h3 style="margin-top:0; font-size:14px; color:var(--primary)">SIGNER BIO</h3>
+                    <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading...</p>
                 </div>
-
                 <div style="margin-top:25px;">
-                    <label style="font-size:11px; font-weight:700; color:var(--text-dim)">PERSONAL NOTES</label>
-                    <textarea id="p-notes" rows="4" onchange="updateNotes()" placeholder="Describe the item, how you got it, or certification numbers..."></textarea>
+                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION NOTES / ADDRESS</label>
+                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add private notes about this item..."></textarea>
                 </div>
-                
-                <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:8px 15px; border-radius:6px; cursor:pointer;">Delete This Item</button>
+                <button onclick="deleteEntry()" style="margin-top:30px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px;">Delete Item</button>
             </div>
         </div>
     </div>
 
+    <div id="view-stats" class="view-section">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+            <div class="stat-card"><h3>STATUS SPREAD</h3><canvas id="chartStatus"></canvas></div>
+            <div class="stat-card"><h3>CATEGORIES</h3><canvas id="chartCats"></canvas></div>
+        </div>
+    </div>
+
+    <div id="view-addresses" class="view-section">
+        <table class="address-table">
+            <thead><tr><th>RECIPIENT</th><th>ADDRESS / NOTES</th></tr></thead>
+            <tbody id="addressBody"></tbody>
+        </table>
+    </div>
 </div>
 
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
-        <h2 style="margin-top:0">Add New Item</h2>
-        <label>Signer Name</label>
-        <input id="f_name" placeholder="e.g. Leah Remini">
-        <label style="margin-top:15px; display:block;">Item Description</label>
-        <input id="f_item" placeholder="e.g. 8x10 Signed Photo">
-        <label style="margin-top:15px; display:block;">Source</label>
-        <select id="f_source">
-            <option>TTM</option><option>Purchased</option><option>In-Person</option>
-        </select>
-        
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:25px;">
+        <h2 style="margin-top:0">New Collection Entry</h2>
+        <input id="f_name" placeholder="Signer Name" style="margin-bottom:15px">
+        <input id="f_item" placeholder="Item (e.g. 8x10, Custom 4x6, Trading Card)" style="margin-bottom:15px">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px">
+            <select id="f_source"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
+            <select id="f_role"><option>Actor</option><option>Athlete</option><option>Musician</option><option>Other</option></select>
+        </div>
+        <textarea id="f_address" placeholder="Mailing Address" rows="3"></textarea>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
             <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim);">CANCEL</button>
-            <button onclick="addEntry()" class="btn-primary">ADD TO VAULT</button>
+            <button onclick="addEntry()" class="btn-primary">SAVE TO VAULT</button>
         </div>
     </div>
 </div>
@@ -132,75 +165,101 @@
 <script>
     const sb = window.supabase.createClient("https://aeezsewfoozizduzuidv.supabase.co", "sb_publishable_l4QEnXwOlTZJnsN6VE6jrA_tBa_2aoz");
     const TMDB_KEY = "d4656a893658ed711bcadef18dc23300";
-    let allData = [];
-    let currentItem = null;
+    let allData = [], currentItem = null, charts = {};
 
     async function loadData() {
-        const { data } = await sb.from("Tracking").select("*").order('created_at', { ascending: false });
+        const { data } = await sb.from("Tracking").select("*");
         allData = data || [];
         renderGallery();
+        updateStats();
+        renderAddressTable();
     }
 
     function renderGallery() {
-        const grid = document.getElementById("galleryGrid");
-        grid.innerHTML = allData.map(d => `
+        const query = document.getElementById("searchBar").value.toLowerCase();
+        const sort = document.getElementById("sortOrder").value;
+        let filtered = allData.filter(d => (d.name+d.item_type+d.role_type).toLowerCase().includes(query));
+
+        filtered.sort((a,b) => {
+            if(sort === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+            if(sort === 'alpha') return a.name.localeCompare(b.name);
+            if(sort === 'status') {
+                const weight = (i) => (i.source === 'Purchased' || i.status === 'received') ? 1 : (i.status === 'pending' ? 2 : 3);
+                return weight(a) - weight(b);
+            }
+        });
+
+        document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
+            const isSuccess = d.status === 'received' || d.source === 'Purchased';
+            return `
             <div class="item-card" onclick="openProfile('${d.id}')">
-                <img class="card-img" src="${d.img_url || 'https://via.placeholder.com/300?text=No+Image'}">
-                <div class="card-info">
-                    <span class="card-name">${d.name}</span>
-                    <span class="card-sub">${d.item_type || 'Unknown Item'}</span>
-                    <div style="margin-top:10px; font-size:10px; font-weight:700; color:${d.status==='received'?'var(--received)':'var(--primary)'}">
-                        ${d.status.toUpperCase()} (${d.source})
+                ${isSuccess ? '<div class="gold-star">★</div>' : ''}
+                <img class="card-img" src="${d.img_url || 'https://via.placeholder.com/300?text=No+Photo'}">
+                <div class="card-content">
+                    <strong style="display:block">${d.name}</strong>
+                    <span style="font-size:11px; color:var(--text-dim)">${d.item_type || d.role_type}</span>
+                    <div style="margin-top:10px; font-size:10px; font-weight:700; color:${d.status==='received'?'var(--received)':'var(--pending)'}">
+                        <span class="status-dot" style="background:${d.status==='received'?'var(--received)':'var(--pending)'}"></span>
+                        ${d.status.toUpperCase()}
                     </div>
                 </div>
-            </div>
-        `).join("");
+            </div>`;
+        }).join("");
     }
 
     async function openProfile(id) {
         currentItem = allData.find(x => x.id === id);
         switchView('profile');
-        
+        document.getElementById("p-img").src = currentItem.img_url || 'https://via.placeholder.com/400x500?text=Upload+Photo';
         document.getElementById("p-name").innerText = currentItem.name;
-        document.getElementById("p-item").innerText = currentItem.item_type;
+        document.getElementById("p-item-type").innerText = currentItem.item_type || "Item Detail Missing";
         document.getElementById("p-notes").value = currentItem.address || "";
-        document.getElementById("p-img").src = currentItem.img_url || 'https://via.placeholder.com/400x500?text=No+Photo+Uploaded';
-
-        // Get Bio
-        document.getElementById("p-bio").innerText = "Searching biography...";
+        document.getElementById("p-status-select").value = currentItem.status;
+        
+        document.getElementById("p-bio").innerText = "Fetching bio...";
         const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
         const json = await res.json();
         if(json.results?.[0]) {
-            const detail = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
-            document.getElementById("p-bio").innerText = detail.biography || "Bio not available.";
-        } else {
-            document.getElementById("p-bio").innerText = "Actor details not found on TMDB.";
-        }
+            const det = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
+            document.getElementById("p-bio").innerText = det.biography || "No bio found.";
+        } else { document.getElementById("p-bio").innerText = "Not found on TMDB."; }
     }
 
-    // --- THE UPLOAD LOGIC ---
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
+    async function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if(!file) return;
         const reader = new FileReader();
-        reader.onload = async (e) => {
-            let imgData = e.target.result;
-            
-            // Update UI immediately
+        reader.onload = async (event) => {
+            const imgData = event.target.result;
             document.getElementById("p-img").src = imgData;
-            
-            // Save to Supabase
             await sb.from("Tracking").update({ img_url: imgData }).eq("id", currentItem.id);
             loadData();
         };
         reader.readAsDataURL(file);
     }
 
-    async function updateNotes() {
-        const val = document.getElementById("p-notes").value;
-        await sb.from("Tracking").update({ address: val }).eq("id", currentItem.id);
+    async function updateItemStatus(status) {
+        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
         loadData();
+    }
+
+    async function updateNotes() {
+        await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
+        loadData();
+    }
+
+    function updateStats() {
+        const successes = allData.filter(d => d.status === 'received' || d.source === 'Purchased').length;
+        document.getElementById('s-total').innerText = allData.length;
+        document.getElementById('s-success').innerText = successes;
+        document.getElementById('s-pending').innerText = allData.filter(d => d.status === 'pending').length;
+        document.getElementById('s-mix').innerText = `${allData.filter(d => d.source==='TTM').length} TTM / ${allData.filter(d => d.source==='Purchased').length} Purchased`;
+    }
+
+    function renderAddressTable() {
+        document.getElementById("addressBody").innerHTML = allData.map(d => `
+            <tr><td><b>${d.name}</b></td><td style="font-family:JetBrains Mono; color:var(--text-dim)">${d.address || '—'}</td></tr>
+        `).join("");
     }
 
     async function addEntry() {
@@ -208,26 +267,30 @@
             name: document.getElementById("f_name").value,
             item_type: document.getElementById("f_item").value,
             source: document.getElementById("f_source").value,
-            status: (document.getElementById("f_source").value === 'Purchased' ? 'received' : 'pending')
+            role_type: document.getElementById("f_role").value,
+            address: document.getElementById("f_address").value,
+            status: (document.getElementById("f_source").value==='Purchased'?'received':'pending')
         };
         await sb.from("Tracking").insert([entry]);
         toggleModal('addModal', false);
         loadData();
     }
 
-    async function deleteEntry() {
-        if(confirm("Delete this item forever?")) {
-            await sb.from("Tracking").delete().eq("id", currentItem.id);
-            switchView('summary');
-            loadData();
+    function switchView(v) {
+        document.querySelectorAll('.view-section, .nav-item').forEach(e => e.classList.remove('active'));
+        document.getElementById(`view-${v}`).classList.add('active');
+        if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('active');
+        if(v === 'stats') {
+            const ctx1 = document.getElementById('chartStatus').getContext('2d');
+            const ctx2 = document.getElementById('chartCats').getContext('2d');
+            if(charts.a) charts.a.destroy(); if(charts.b) charts.b.destroy();
+            charts.a = new Chart(ctx1, { type: 'doughnut', data: { labels: ['Success', 'Pending', 'RTS'], datasets: [{ data: [allData.filter(d => d.status==='received').length, allData.filter(d=>d.status==='pending').length, allData.filter(d=>d.status==='rts').length], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] }});
+            charts.b = new Chart(ctx2, { type: 'bar', data: { labels: ['Actor', 'Athlete', 'Musician', 'Other'], datasets: [{ data: [allData.filter(d=>d.role_type==='Actor').length, allData.filter(d=>d.role_type==='Athlete').length, allData.filter(d=>d.role_type==='Musician').length, allData.filter(d=>d.role_type==='Other').length], backgroundColor: '#818cf8' }] }, options: { indexAxis: 'y'}});
         }
     }
 
-    function switchView(v) {
-        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`view-${v}`).classList.add('active');
-    }
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "block" : "none"; }
+    async function deleteEntry() { if(confirm("Delete?")) { await sb.from("Tracking").delete().eq("id", currentItem.id); switchView('summary'); loadData(); } }
 
     loadData();
 </script>
