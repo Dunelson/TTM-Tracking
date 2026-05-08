@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autograph Vault | J. Nelson Edition</title>
+    <title>Autograph Vault | Category Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -30,18 +30,15 @@
         .view-section { display: none; }
         .view-section.active { display: block; }
 
-        /* Stats Row */
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
         .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); }
         .stat-value { font-size: 24px; font-weight: 800; display: block; margin-top: 5px; font-family: 'JetBrains Mono'; }
 
-        /* Filter Bar */
         .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
         .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; min-width: 250px; }
         .sort-select { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 11px; border-radius: 10px; cursor: pointer; }
         .btn-data { background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-dim); padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
 
-        /* Gallery Grid */
         .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
         .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.2s; cursor: pointer; position: relative; }
         .item-card:hover { transform: translateY(-5px); border-color: var(--primary); }
@@ -50,7 +47,6 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .gold-star { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 5px; border-radius: 50%; color: var(--gold); font-size: 12px; }
 
-        /* Profile Layout */
         .profile-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
         .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; }
         .p-img-frame img { width: 100%; display: block; }
@@ -81,7 +77,6 @@
 </nav>
 
 <div class="container">
-    
     <div class="stats-grid">
         <div class="stat-card" style="border-top-color: var(--primary)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">TOTAL ITEMS</span><span class="stat-value" id="s-total">0</span></div>
         <div class="stat-card" style="border-top-color: var(--received)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">SUCCESSES</span><span class="stat-value" id="s-success" style="color:var(--received)">0</span></div>
@@ -91,11 +86,12 @@
 
     <div id="view-summary" class="view-section active">
         <div class="filter-bar">
-            <input type="text" id="searchBar" class="search-input" placeholder="Search collection..." oninput="renderGallery()">
+            <input type="text" id="searchBar" class="search-input" placeholder="Search names, items, or roles..." oninput="renderGallery()">
             <button class="btn-data" onclick="exportCSV()">EXPORT CSV</button>
             <label class="btn-data">IMPORT CSV <input type="file" id="csvImport" accept=".csv" onchange="importCSV(event)" style="display:none"></label>
             <select id="sortOrder" class="sort-select" onchange="renderGallery()">
                 <option value="newest">Newest First</option>
+                <option value="role">Group by Role</option>
                 <option value="received">Completed Only</option>
                 <option value="status">Group by Status</option>
                 <option value="alpha">Name (A-Z)</option>
@@ -108,7 +104,7 @@
         <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700; display:flex; align-items:center; gap:8px;">← BACK TO COLLECTION</button>
         <div class="profile-grid">
             <div>
-                <div class="p-img-frame" id="p-img-container"><img id="p-img" src=""></div>
+                <div class="p-img-frame"><img id="p-img" src=""></div>
                 <label class="upload-btn">UPLOAD PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)" style="display:none"></label>
                 <div style="margin-top:20px;">
                     <label style="font-size:10px; font-weight:700; color:var(--text-dim)">ITEM STATUS</label>
@@ -186,15 +182,14 @@
     function renderGallery() {
         const query = document.getElementById("searchBar").value.toLowerCase();
         const sort = document.getElementById("sortOrder").value;
-        let filtered = allData.filter(d => (d.name+d.item_type+d.role_type).toLowerCase().includes(query));
+        let filtered = allData.filter(d => (d.name+d.item_type+(d.role_type||'')).toLowerCase().includes(query));
 
-        if(sort === 'received') {
-            filtered = filtered.filter(d => d.status === 'received' || d.source === 'Purchased');
-        }
+        if(sort === 'received') filtered = filtered.filter(d => d.status === 'received' || d.source === 'Purchased');
 
         filtered.sort((a,b) => {
             if(sort === 'newest') return new Date(b.created_at) - new Date(a.created_at);
             if(sort === 'alpha') return a.name.localeCompare(b.name);
+            if(sort === 'role') return (a.role_type || '').localeCompare(b.role_type || '');
             if(sort === 'status') {
                 const weight = (i) => (i.source === 'Purchased' || i.status === 'received') ? 1 : (i.status === 'pending' ? 2 : 3);
                 return weight(a) - weight(b);
@@ -210,7 +205,7 @@
                 <img class="card-img" src="${d.img_url || 'https://via.placeholder.com/300?text=No+Photo'}">
                 <div class="card-content">
                     <strong style="display:block">${d.name}</strong>
-                    <span style="font-size:11px; color:var(--text-dim)">${d.item_type || d.role_type}</span>
+                    <span style="font-size:11px; color:var(--text-dim)">${d.role_type || ''} | ${d.item_type || ''}</span>
                     <div style="margin-top:10px; font-size:10px; font-weight:700; color:${d.status==='received'?'var(--received)':'var(--pending)'}">
                         <span class="status-dot" style="background:${d.status==='received'?'var(--received)':'var(--pending)'}"></span>
                         ${d.status.toUpperCase()}
@@ -264,7 +259,7 @@
 
     function renderAddressTable() {
         const query = document.getElementById("addressSearch")?.value.toLowerCase() || "";
-        const filtered = allData.filter(d => (d.name + d.address).toLowerCase().includes(query));
+        const filtered = allData.filter(d => (d.name + (d.address||'')).toLowerCase().includes(query));
         document.getElementById("addressBody").innerHTML = filtered.map(d => `
             <tr>
                 <td><b>${d.name}</b></td>
@@ -348,7 +343,7 @@
             const s = { rec: allData.filter(d=>d.status==='received'||d.source==='Purchased').length, pen: allData.filter(d=>d.status==='pending').length, rts: allData.filter(d=>d.status==='rts').length };
             charts.a = new Chart(document.getElementById('chartStatus'), { type: 'doughnut', data: { labels: ['Success', 'Pending', 'RTS'], datasets: [{ data: [s.rec, s.pen, s.rts], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] }});
             const roleCounts = {};
-            allData.forEach(d => roleCounts[d.role_type] = (roleCounts[d.role_type] || 0) + 1);
+            allData.forEach(d => { const r = d.role_type || 'Unknown'; roleCounts[r] = (roleCounts[r] || 0) + 1; });
             charts.b = new Chart(document.getElementById('chartCats'), { type: 'bar', data: { labels: Object.keys(roleCounts), datasets: [{ data: Object.values(roleCounts), backgroundColor: '#818cf8' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } } }});
         }
     }
