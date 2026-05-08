@@ -16,7 +16,6 @@
 
         body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
         
-        /* Navigation */
         .nav-bar { 
             background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(10px);
             padding: 15px 40px; display: flex; align-items: center; justify-content: space-between;
@@ -41,7 +40,6 @@
         .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; min-width: 250px; }
         .sort-select { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 11px; border-radius: 10px; cursor: pointer; }
         .btn-data { background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-dim); padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
-        .btn-data:hover { color: white; border-color: var(--primary); }
 
         /* Gallery Grid */
         .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
@@ -58,7 +56,6 @@
         .p-img-frame img { width: 100%; display: block; }
         .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 15px; width: 100%; text-align: center; box-sizing: border-box; }
         
-        /* Tables */
         .address-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
         .address-table th { text-align: left; padding: 15px; background: rgba(0,0,0,0.2); font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
         .address-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -95,12 +92,11 @@
     <div id="view-summary" class="view-section active">
         <div class="filter-bar">
             <input type="text" id="searchBar" class="search-input" placeholder="Search collection..." oninput="renderGallery()">
-            
             <button class="btn-data" onclick="exportCSV()">EXPORT CSV</button>
             <label class="btn-data">IMPORT CSV <input type="file" id="csvImport" accept=".csv" onchange="importCSV(event)" style="display:none"></label>
-            
             <select id="sortOrder" class="sort-select" onchange="renderGallery()">
                 <option value="newest">Newest First</option>
+                <option value="received">Completed Only</option>
                 <option value="status">Group by Status</option>
                 <option value="alpha">Name (A-Z)</option>
             </select>
@@ -130,7 +126,7 @@
                 </div>
                 <div style="margin-top:25px;">
                     <label style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION NOTES / ADDRESS</label>
-                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add private notes or tracking info..."></textarea>
+                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add private notes..."></textarea>
                 </div>
                 <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px;">Permanently Delete Item</button>
             </div>
@@ -157,12 +153,16 @@
     <div class="modal-content">
         <h2 style="margin-top:0; color:var(--primary)">Add New Item</h2>
         <input id="f_name" placeholder="Signer Name" style="margin-bottom:15px">
-        <input id="f_item" placeholder="Item (e.g. 8x10, Custom 4x6)" style="margin-bottom:15px">
+        <input id="f_item" placeholder="Item (e.g. 8x10, Trading Card)" style="margin-bottom:15px">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px">
             <select id="f_source"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
-            <select id="f_role"><option>Actor</option><option>Athlete</option><option>Musician</option><option>Other</option></select>
+            <select id="f_role">
+                <option>Actor</option><option>Director</option><option>Producer</option>
+                <option>Comedian</option><option>Composer</option><option>Musician</option>
+                <option>Politician</option><option>Athlete</option><option>Other</option>
+            </select>
         </div>
-        <textarea id="f_address" placeholder="Mailing Address or Initial Notes" rows="3"></textarea>
+        <textarea id="f_address" placeholder="Mailing Address" rows="3"></textarea>
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
             <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim); cursor:pointer;">CANCEL</button>
             <button onclick="addEntry()" class="btn-primary">SAVE ENTRY</button>
@@ -188,6 +188,10 @@
         const sort = document.getElementById("sortOrder").value;
         let filtered = allData.filter(d => (d.name+d.item_type+d.role_type).toLowerCase().includes(query));
 
+        if(sort === 'received') {
+            filtered = filtered.filter(d => d.status === 'received' || d.source === 'Purchased');
+        }
+
         filtered.sort((a,b) => {
             if(sort === 'newest') return new Date(b.created_at) - new Date(a.created_at);
             if(sort === 'alpha') return a.name.localeCompare(b.name);
@@ -195,6 +199,7 @@
                 const weight = (i) => (i.source === 'Purchased' || i.status === 'received') ? 1 : (i.status === 'pending' ? 2 : 3);
                 return weight(a) - weight(b);
             }
+            return 0;
         });
 
         document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
@@ -220,11 +225,10 @@
         switchView('profile');
         document.getElementById("p-img").src = currentItem.img_url || 'https://via.placeholder.com/400x500?text=Upload+Photo';
         document.getElementById("p-name").innerText = currentItem.name;
-        document.getElementById("p-item-type").innerText = currentItem.item_type || "Item Type Not Specified";
+        document.getElementById("p-item-type").innerText = `${currentItem.role_type} | ${currentItem.item_type || "No Detail"}`;
         document.getElementById("p-notes").value = currentItem.address || "";
         document.getElementById("p-status-select").value = currentItem.status;
         
-        // Fetch Bio
         document.getElementById("p-bio").innerText = "Searching TMDB...";
         try {
             const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
@@ -343,8 +347,9 @@
             if(charts.a) charts.a.destroy(); if(charts.b) charts.b.destroy();
             const s = { rec: allData.filter(d=>d.status==='received'||d.source==='Purchased').length, pen: allData.filter(d=>d.status==='pending').length, rts: allData.filter(d=>d.status==='rts').length };
             charts.a = new Chart(document.getElementById('chartStatus'), { type: 'doughnut', data: { labels: ['Success', 'Pending', 'RTS'], datasets: [{ data: [s.rec, s.pen, s.rts], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] }});
-            const cats = ['Actor', 'Athlete', 'Musician', 'Other'];
-            charts.b = new Chart(document.getElementById('chartCats'), { type: 'bar', data: { labels: cats, datasets: [{ data: cats.map(c => allData.filter(d=>d.role_type===c).length), backgroundColor: '#818cf8' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } } }});
+            const roleCounts = {};
+            allData.forEach(d => roleCounts[d.role_type] = (roleCounts[d.role_type] || 0) + 1);
+            charts.b = new Chart(document.getElementById('chartCats'), { type: 'bar', data: { labels: Object.keys(roleCounts), datasets: [{ data: Object.values(roleCounts), backgroundColor: '#818cf8' }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } } }});
         }
     }
 
