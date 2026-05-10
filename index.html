@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Autograph Vault | Pro Edition</title>
+    <title>Autograph Vault Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -14,93 +14,83 @@
             --received: #4ade80; --rts: #fb7185; --pending: #38bdf8;
         }
 
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
         
-        /* Navigation & Tabs */
+        /* Navigation */
         .nav-bar { background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
         .logo { font-weight: 800; font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
-        
-        .filter-tabs { display: flex; gap: 5px; background: #000; padding: 4px; border-radius: 10px; margin-bottom: 15px; }
-        .tab { flex: 1; text-align: center; padding: 8px; font-size: 11px; font-weight: 800; color: var(--text-dim); cursor: pointer; border-radius: 7px; transition: 0.2s; }
-        .tab.active { background: var(--card-bg); color: var(--primary); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .nav-menu { display: flex; gap: 10px; }
+        .nav-item { color: var(--text-dim); text-decoration: none; font-size: 10px; font-weight: 800; cursor: pointer; padding: 8px 12px; border-radius: 20px; transition: 0.2s; background: rgba(255,255,255,0.03); }
+        .nav-item.active { color: var(--text); background: var(--primary); }
 
-        .container { padding: 15px; max-width: 1200px; margin: 0 auto; }
+        /* Tabs & Filters */
+        .filter-tabs { display: flex; gap: 5px; background: #000; padding: 5px; border-radius: 12px; margin: 15px 0; }
+        .tab { flex: 1; text-align: center; padding: 10px; font-size: 11px; font-weight: 800; color: var(--text-dim); cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .tab.active { background: var(--card-bg); color: var(--primary); }
 
-        /* Stats & Search */
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: var(--card-bg); padding: 10px; border-radius: 10px; border: 1px solid var(--border); text-align: center; }
-        .stat-value { font-size: 16px; font-weight: 800; font-family: 'JetBrains Mono'; display: block; color: var(--primary); }
-        
-        .search-box { position: relative; margin-bottom: 15px; display: flex; gap: 8px; }
-        .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 10px; color: white; font-size: 16px; outline: none; }
+        .container { padding: 0 15px 100px 15px; max-width: 1200px; margin: 0 auto; }
 
-        /* Grid Logic */
-        .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        /* Item Grid */
+        .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; min-height: 200px; }
         @media (min-width: 768px) { .item-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
-
-        .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
+        .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; position: relative; cursor: pointer; }
         .card-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; display: block; }
         .card-content { padding: 10px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
 
-        /* Profile & Buttons */
+        /* Profile Layout */
         .profile-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 768px) { .profile-grid { grid-template-columns: 400px 1fr; } }
         .p-img-frame { width: 100%; aspect-ratio: 4/5; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); }
         .p-img-frame img { width: 100%; height: 100%; object-fit: contain; }
         
-        .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; }
-        .strip-img { width: 65px; height: 65px; object-fit: cover; border-radius: 6px; border: 2px solid var(--border); flex-shrink: 0; }
-        .strip-img.active { border-color: var(--primary); }
+        /* Buttons & Forms */
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; font-size: 14px; }
+        .search-input { width: 100%; background: var(--card-bg); border: 1px solid var(--border); padding: 15px; border-radius: 12px; color: white; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
 
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; cursor: pointer; width: 100%; }
+        /* List Styling */
+        .address-card { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; }
+
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-content { background: var(--card-bg); border-radius: 15px; padding: 25px; width: 100%; max-width: 400px; }
         
-        select, input, textarea { background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 8px; padding: 10px; font-family: inherit; }
+        select, input, textarea { background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 8px; padding: 12px; font-family: inherit; }
     </style>
 </head>
 <body>
 
 <nav class="nav-bar">
     <div class="logo">Vault Pro</div>
-    <div style="display:flex; gap: 5px;">
-        <div class="nav-item active" onclick="switchView('summary')">COLLECTION</div>
-        <div class="nav-item" onclick="switchView('stats')">STATS</div>
+    <div class="nav-menu">
+        <div id="btn-summary" class="nav-item active" onclick="switchView('summary')">COLLECTION</div>
+        <div id="btn-stats" class="nav-item" onclick="switchView('stats')">STATS</div>
+        <div id="btn-addresses" class="nav-item" onclick="switchView('addresses')">LIST</div>
     </div>
 </nav>
 
 <div class="container">
     <div id="view-summary" class="view-section">
-        <div class="stats-grid">
-            <div class="stat-card"><small>TOTAL</small><span class="stat-value" id="s-total">0</span></div>
-            <div class="stat-card"><small>REC'D</small><span class="stat-value" style="color:var(--received)" id="s-success">0</span></div>
-            <div class="stat-card"><small>PENDING</small><span class="stat-value" style="color:var(--pending)" id="s-pending">0</span></div>
-            <div class="stat-card"><small>DAYS AVG</small><span class="stat-value" id="s-avg">0</span></div>
-        </div>
-
         <div class="filter-tabs">
             <div class="tab active" onclick="setFilter('all', this)">ALL</div>
             <div class="tab" onclick="setFilter('pending', this)">PENDING</div>
             <div class="tab" onclick="setFilter('received', this)">RECEIVED</div>
         </div>
 
-        <div class="search-box">
-            <input type="text" id="searchBar" class="search-input" placeholder="Search entries..." oninput="renderGallery()">
-            <button onclick="toggleModal('addModal', true)" style="background:var(--primary); border:none; border-radius:10px; width:50px; color:white; font-size:24px; cursor:pointer;">+</button>
+        <div style="display:flex; gap:10px;">
+            <input type="text" id="searchBar" class="search-input" placeholder="Search collection..." oninput="renderGallery()">
+            <button onclick="toggleModal('addModal', true)" style="background:var(--primary); border:none; border-radius:12px; width:60px; height:50px; color:white; font-size:24px; cursor:pointer;">+</button>
         </div>
 
         <div class="item-grid" id="galleryGrid"></div>
     </div>
 
     <div id="view-profile" class="view-section" style="display:none;">
-        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); padding:15px 0; font-weight:800; cursor:pointer;">← BACK</button>
+        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); padding:15px 0; font-weight:800; cursor:pointer; font-size:14px;">← BACK</button>
         <div class="profile-grid">
             <div>
                 <div class="p-img-frame"><img id="p-img" src=""></div>
-                <div id="p-photo-strip" class="photo-strip"></div>
+                <div id="p-photo-strip" style="display:flex; gap:8px; overflow-x:auto; padding:10px 0;"></div>
                 <label class="btn-primary" style="display:block; text-align:center;">
-                    + ADD PHOTO <input type="file" accept="image/*" onchange="uploadToStorage(event)" style="display:none">
+                    + UPLOAD PHOTO <input type="file" accept="image/*" onchange="uploadToStorage(event)" style="display:none">
                 </label>
             </div>
             <div>
@@ -110,41 +100,56 @@
                     <select id="p-source-select" onchange="updateField('source', this.value)" style="flex:1;"></select>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px;">
-                    <div><small>SENT</small><input type="date" id="p-date-sent" onchange="updateDates()" style="width:100%; border:none;"></div>
-                    <div><small>REC'D</small><input type="date" id="p-date-received" onchange="updateDates()" style="width:100%; border:none;"></div>
-                    <div style="text-align:center;"><small>DAYS</small><div id="p-days-out" style="color:var(--primary); font-weight:800; font-size:20px;">0</div></div>
+                    <div><small>SENT</small><input type="date" id="p-date-sent" onchange="updateDates()" style="width:100%; border:none; padding:5px;"></div>
+                    <div><small>REC'D</small><input type="date" id="p-date-received" onchange="updateDates()" style="width:100%; border:none; padding:5px;"></div>
+                    <div style="text-align:center;"><small>DAYS</small><div id="p-days-out" style="color:var(--primary); font-weight:800; font-size:22px; margin-top:5px;">0</div></div>
                 </div>
-                <textarea id="p-notes" rows="6" onchange="updateField('address', this.value)" style="width:100%; box-sizing:border-box;" placeholder="Notes/Address..."></textarea>
-                <button onclick="deleteEntry()" style="color:var(--rts); background:none; border:none; width:100%; margin-top:30px; font-size:12px; cursor:pointer;">Delete Permanently</button>
+                <textarea id="p-notes" rows="6" onchange="updateField('address', this.value)" style="width:100%; box-sizing:border-box;" placeholder="Address or notes..."></textarea>
+                <button onclick="deleteEntry()" style="color:var(--rts); background:none; border:none; width:100%; margin-top:30px; font-size:12px; cursor:pointer; opacity:0.6;">Delete Permanently</button>
             </div>
         </div>
+    </div>
+
+    <div id="view-stats" class="view-section" style="display:none;">
+        <h2 style="margin-top:20px;">Performance</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
+            <div class="address-card" style="text-align:center;"><small>SUCCESS RATE</small><div id="stat-rate" style="font-size:24px; font-weight:800; color:var(--received);">0%</div></div>
+            <div class="address-card" style="text-align:center;"><small>AVG DAYS</small><div id="stat-avg" style="font-size:24px; font-weight:800; color:var(--primary);">0</div></div>
+        </div>
+        <canvas id="chartStatus" style="max-height:300px; margin-top:20px;"></canvas>
+    </div>
+
+    <div id="view-addresses" class="view-section" style="display:none;">
+        <h2 style="margin-top:20px;">Address Book</h2>
+        <div id="addressList"></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
-        <h2 style="margin:0 0 20px 0;">New Tracker</h2>
-        <input id="f_name" placeholder="Signer Name" class="search-input" style="width:100%; margin-bottom:12px; box-sizing:border-box;">
+        <h2 style="margin:0 0 20px 0;">New Signer</h2>
+        <input id="f_name" placeholder="Full Name" class="search-input" style="margin-bottom:12px;">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-            <select id="f_source"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
-            <select id="f_role"><option>Actor</option><option>Athlete</option><option>Musician</option></select>
+            <select id="f_source" style="padding:12px;"><option>TTM</option><option>Purchased</option></select>
+            <select id="f_role" style="padding:12px;"><option>Actor</option><option>Athlete</option><option>Other</option></select>
         </div>
-        <textarea id="f_address" placeholder="Address/Notes" rows="3" style="width:100%; box-sizing:border-box;"></textarea>
-        <button onclick="addEntry()" class="btn-primary" style="margin-top:15px;">START TRACKING</button>
+        <textarea id="f_address" placeholder="Address/Notes" rows="3" style="width:100%; box-sizing:border-box; margin-bottom:15px;"></textarea>
+        <button onclick="addEntry()" class="btn-primary">SAVE ENTRY</button>
         <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim); width:100%; margin-top:10px; cursor:pointer;">Cancel</button>
     </div>
 </div>
 
 <script>
     const sb = window.supabase.createClient("https://aeezsewfoozizduzuidv.supabase.co", "sb_publishable_l4QEnXwOlTZJnsN6VE6jrA_tBa_2aoz");
-    let allData = [], currentFilter = 'all', currentItem = null;
+    let allData = [], currentFilter = 'all', currentItem = null, chartInstance = null;
 
     async function loadData() {
         const { data, error } = await sb.from("Tracking").select("*").order('name', { ascending: true });
         if (error) return console.error(error);
         allData = data || [];
         renderGallery();
-        updateStats();
+        renderAddressTable();
+        calculateStats();
     }
 
     function setFilter(val, el) {
@@ -156,22 +161,21 @@
 
     function renderGallery() {
         const query = document.getElementById("searchBar").value.toLowerCase();
-        let filtered = allData.filter(d => {
+        const filtered = allData.filter(d => {
             const matchesSearch = d.name.toLowerCase().includes(query);
             const matchesTab = currentFilter === 'all' || d.status === currentFilter;
             return matchesSearch && matchesTab;
         });
 
         document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
-            const img = (d.images && d.images.length > 0) ? d.images[0] : 'https://via.placeholder.com/300?text=No+Photo';
-            const dotColor = d.status === 'received' ? 'var(--received)' : 'var(--pending)';
+            const img = (d.images && d.images.length > 0) ? d.images[0] : 'https://via.placeholder.com/200?text=No+Photo';
             return `
             <div class="item-card" onclick="openProfile('${d.id}')">
                 <img class="card-img" src="${img}" loading="lazy">
                 <div class="card-content">
-                    <strong style="font-size:13px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.name}</strong>
-                    <small style="color:var(--text-dim); font-size:10px;">
-                        <span class="status-dot" style="background:${dotColor}"></span>${d.status.toUpperCase()}
+                    <strong style="font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</strong>
+                    <small style="color:${d.status==='received'?'var(--received)':'var(--pending)'}; font-weight:800; font-size:10px;">
+                        ${d.status.toUpperCase()}
                     </small>
                 </div>
             </div>`;
@@ -180,20 +184,18 @@
 
     async function openProfile(id) {
         currentItem = allData.find(x => x.id === id);
-        switchView('profile');
+        switchView('profile', true);
         
         document.getElementById("p-name").innerText = currentItem.name;
         document.getElementById("p-notes").value = currentItem.address || "";
         document.getElementById("p-date-sent").value = currentItem.date_sent || "";
         document.getElementById("p-date-received").value = currentItem.date_received || "";
         
-        const sStatus = document.getElementById("p-status-select");
-        sStatus.innerHTML = '<option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>';
-        sStatus.value = currentItem.status;
+        document.getElementById("p-status-select").innerHTML = '<option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>';
+        document.getElementById("p-status-select").value = currentItem.status;
 
-        const sSrc = document.getElementById("p-source-select");
-        sSrc.innerHTML = '<option value="TTM">TTM</option><option value="Purchased">Purchased</option><option value="In-Person">In-Person</option>';
-        sSrc.value = currentItem.source || "TTM";
+        document.getElementById("p-source-select").innerHTML = '<option value="TTM">TTM</option><option value="Purchased">Purchased</option>';
+        document.getElementById("p-source-select").value = currentItem.source || "TTM";
 
         renderPhotoStrip();
         calculateOutstanding();
@@ -205,7 +207,7 @@
         if(currentItem.images && currentItem.images.length > 0) {
             main.src = currentItem.images[0];
             strip.innerHTML = currentItem.images.map((img, i) => `
-                <img src="${img}" class="strip-img ${i===0?'active':''}" onclick="document.getElementById('p-img').src='${img}'; document.querySelectorAll('.strip-img').forEach(s=>s.classList.remove('active')); this.classList.add('active')">
+                <img src="${img}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:2px solid ${i===0?'var(--primary)':'var(--border)'}; flex-shrink:0;" onclick="document.getElementById('p-img').src='${img}'">
             `).join("");
         } else {
             main.src = 'https://via.placeholder.com/400x500?text=No+Photos';
@@ -216,20 +218,23 @@
     async function uploadToStorage(e) {
         const file = e.target.files[0];
         if(!file) return;
-        
-        const fileName = `${Date.now()}-${file.name}`;
+        const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
         const { data: uploadData, error } = await sb.storage.from('autographs').upload(fileName, file);
-        
-        if(error) return alert("Upload failed: " + error.message);
-
+        if(error) return alert("Upload failed");
         const { data: urlData } = sb.storage.from('autographs').getPublicUrl(fileName);
-        const publicUrl = urlData.publicUrl;
-
-        if(!currentItem.images) currentItem.images = [];
-        currentItem.images.push(publicUrl);
         
+        if(!currentItem.images) currentItem.images = [];
+        currentItem.images.push(urlData.publicUrl);
         await sb.from("Tracking").update({ images: currentItem.images }).eq("id", currentItem.id);
         renderPhotoStrip();
+        loadData();
+    }
+
+    async function updateDates() {
+        const s = document.getElementById("p-date-sent").value;
+        const r = document.getElementById("p-date-received").value;
+        await sb.from("Tracking").update({ date_sent: s || null, date_received: r || null }).eq("id", currentItem.id);
+        calculateOutstanding();
         loadData();
     }
 
@@ -238,21 +243,12 @@
         loadData();
     }
 
-    async function updateDates() {
-        const sent = document.getElementById("p-date-sent").value;
-        const rec = document.getElementById("p-date-received").value;
-        await sb.from("Tracking").update({ date_sent: sent || null, date_received: rec || null }).eq("id", currentItem.id);
-        calculateOutstanding();
-        loadData();
-    }
-
     function calculateOutstanding() {
         const s = document.getElementById("p-date-sent").value;
         const r = document.getElementById("p-date-received").value;
         if(!s) return document.getElementById("p-days-out").innerText = "—";
-        const start = new Date(s);
         const end = r ? new Date(r) : new Date();
-        document.getElementById("p-days-out").innerText = Math.floor((end - start) / 86400000);
+        document.getElementById("p-days-out").innerText = Math.floor((end - new Date(s)) / 86400000);
     }
 
     async function addEntry() {
@@ -271,24 +267,42 @@
         loadData();
     }
 
-    function updateStats() {
+    function calculateStats() {
         const rec = allData.filter(d => d.status === 'received');
-        document.getElementById('s-total').innerText = allData.length;
-        document.getElementById('s-success').innerText = rec.length;
-        document.getElementById('s-pending').innerText = allData.length - rec.length;
+        const rate = allData.length > 0 ? Math.round((rec.length / allData.length) * 100) : 0;
+        document.getElementById("stat-rate").innerText = rate + "%";
         
-        // Calculate Avg Days
-        const days = rec.filter(d => d.date_sent && d.date_received).map(d => {
-            return (new Date(d.date_received) - new Date(d.date_sent)) / 86400000;
-        });
-        const avg = days.length ? Math.round(days.reduce((a,b)=>a+b,0) / days.length) : 0;
-        document.getElementById('s-avg').innerText = avg;
+        const days = rec.filter(d => d.date_sent && d.date_received).map(d => (new Date(d.date_received) - new Date(d.date_sent)) / 86400000);
+        document.getElementById("stat-avg").innerText = days.length ? Math.round(days.reduce((a,b)=>a+b,0)/days.length) : "0";
     }
 
-    function switchView(v) {
+    function renderAddressTable() {
+        document.getElementById("addressList").innerHTML = allData.map(d => `
+            <div class="address-card">
+                <strong>${d.name}</strong><br>
+                <small style="color:var(--text-dim)">${d.address || 'No address'}</small>
+            </div>
+        `).join("");
+    }
+
+    function switchView(v, isProfile = false) {
         document.querySelectorAll('.view-section').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(`view-${v}`).style.display = 'block';
+        if(!isProfile) document.getElementById(`btn-${v}`).classList.add('active');
+        if(v === 'stats') renderChart();
         window.scrollTo(0,0);
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('chartStatus').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        const counts = { rec: allData.filter(d=>d.status==='received').length, pen: allData.filter(d=>d.status==='pending').length };
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels: ['Received', 'Pending'], datasets: [{ data: [counts.rec, counts.pen], backgroundColor: ['#4ade80', '#38bdf8'] }] },
+            options: { plugins: { legend: { labels: { color: '#f1f5f9' } } } }
+        });
     }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "flex" : "none"; }
