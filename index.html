@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autograph Vault | Multi-Photo Pro</title>
+    <title>Autograph Vault | Pro Multi-Photo</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -37,24 +37,25 @@
         .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
         .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; min-width: 250px; }
         .sort-select { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 11px; border-radius: 10px; cursor: pointer; }
-        .btn-data { background: var(--bg-dark); border: 1px solid var(--border); color: var(--text-dim); padding: 10px 15px; border-radius: 10px; cursor: pointer; font-size: 11px; font-weight: 700; transition: 0.2s; }
 
         .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
         .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.2s; cursor: pointer; position: relative; }
+        .item-card:hover { transform: translateY(-5px); border-color: var(--primary); }
         .card-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
         .card-content { padding: 15px; }
 
-        /* Multi-Photo Styles */
-        .photo-strip { display: flex; gap: 10px; margin-top: 20px; overflow-x: auto; padding-bottom: 10px; }
+        /* Multi-Photo Thumbnails */
+        .photo-strip { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 10px; min-height: 90px; }
         .strip-img-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
         .strip-img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; }
         .strip-img.active { border-color: var(--primary); }
-        .del-photo { position: absolute; top: -5px; right: -5px; background: var(--rts); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; cursor: pointer; }
+        .del-photo-btn { position: absolute; top: -5px; right: -5px; background: var(--rts); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; font-weight: bold; }
 
         .profile-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
-        .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; }
+        .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; position: relative; }
         .p-img-frame img { width: 100%; display: block; }
-        .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 15px; width: 100%; text-align: center; box-sizing: border-box; }
+        
+        .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 10px; width: 100%; text-align: center; box-sizing: border-box; }
         
         .address-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
         .address-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -81,17 +82,20 @@
 
 <div class="container">
     <div class="stats-grid">
-        <div class="stat-card"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">TOTAL ITEMS</span><span class="stat-value" id="s-total">0</span></div>
-        <div class="stat-card"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">SUCCESSES</span><span class="stat-value" id="s-success" style="color:var(--received)">0</span></div>
-        <div class="stat-card"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">PENDING</span><span class="stat-value" id="s-pending" style="color:var(--pending)">0</span></div>
-        <div class="stat-card"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">MIX</span><span id="s-mix" style="display:block; margin-top:10px; font-size:13px; font-weight:600;">—</span></div>
+        <div class="stat-card" style="border-top-color: var(--primary)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">TOTAL ITEMS</span><span class="stat-value" id="s-total">0</span></div>
+        <div class="stat-card" style="border-top-color: var(--received)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">SUCCESSES</span><span class="stat-value" id="s-success" style="color:var(--received)">0</span></div>
+        <div class="stat-card" style="border-top-color: var(--pending)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">PENDING</span><span class="stat-value" id="s-pending" style="color:var(--pending)">0</span></div>
+        <div class="stat-card" style="border-top-color: var(--gold)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">MIX</span><span id="s-mix" style="display:block; margin-top:10px; font-size:13px; font-weight:600;">—</span></div>
     </div>
 
     <div id="view-summary" class="view-section active">
         <div class="filter-bar">
-            <input type="text" id="searchBar" class="search-input" placeholder="Search..." oninput="renderGallery()">
+            <input type="text" id="searchBar" class="search-input" placeholder="Search names, items, or roles..." oninput="renderGallery()">
             <select id="sortOrder" class="sort-select" onchange="renderGallery()">
                 <option value="newest">Newest First</option>
+                <option value="role">Group by Role</option>
+                <option value="received">Completed Only</option>
+                <option value="status">Group by Status</option>
                 <option value="alpha">Name (A-Z)</option>
             </select>
         </div>
@@ -99,12 +103,12 @@
     </div>
 
     <div id="view-profile" class="view-section">
-        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700;">← BACK</button>
+        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700; display:flex; align-items:center; gap:8px;">← BACK TO COLLECTION</button>
         <div class="profile-grid">
             <div>
                 <div class="p-img-frame"><img id="p-img" src=""></div>
                 <div id="p-photo-strip" class="photo-strip"></div>
-                <label class="upload-btn">ADD ANOTHER PHOTO <input type="file" accept="image/*" onchange="handleMultiUpload(event)" style="display:none"></label>
+                <label class="upload-btn">UPLOAD NEW PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleMultiFileUpload(event)" style="display:none"></label>
                 
                 <div style="margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <div>
@@ -125,25 +129,28 @@
                 <h1 id="p-name" style="margin:0"></h1>
                 <p id="p-item-type" style="color:var(--primary); font-weight:700; font-size:20px; margin: 5px 0 25px 0;"></p>
                 <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px;">
-                    <h3 style="margin-top:0; font-size:12px; color:var(--primary);">SIGNER BIO</h3>
-                    <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading...</p>
+                    <h3 style="margin-top:0; font-size:12px; color:var(--primary); text-transform:uppercase;">Signer Bio</h3>
+                    <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading bio...</p>
                 </div>
-                <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:20px;" placeholder="Notes/Address..."></textarea>
-                <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer;">Delete Entry</button>
+                <div style="margin-top:25px;">
+                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION NOTES / ADDRESS</label>
+                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add notes..."></textarea>
+                </div>
+                <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px; width:100%;">Permanently Delete Entire Entry</button>
             </div>
         </div>
     </div>
 
     <div id="view-stats" class="view-section">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div class="stat-card"><h3>STATUS</h3><canvas id="chartStatus"></canvas></div>
+            <div class="stat-card"><h3>STATUS DISTRIBUTION</h3><canvas id="chartStatus"></canvas></div>
             <div class="stat-card"><h3>CATEGORIES</h3><canvas id="chartCats"></canvas></div>
         </div>
     </div>
 
     <div id="view-addresses" class="view-section">
-        <table class="address-table" style="width:100%">
-            <thead><tr style="text-align:left; color:var(--text-dim); font-size:10px;"><th>NAME</th><th>ADDRESS</th></tr></thead>
+        <table class="address-table">
+            <thead><tr style="text-align:left; color:var(--text-dim); font-size:11px;"><th>RECIPIENT</th><th>ADDRESS / NOTES</th></tr></thead>
             <tbody id="addressBody"></tbody>
         </table>
     </div>
@@ -153,13 +160,15 @@
     <div class="modal-content">
         <h2 style="margin-top:0; color:var(--primary)">Add New Item</h2>
         <input id="f_name" placeholder="Signer Name" style="margin-bottom:15px">
-        <input id="f_item" placeholder="Item Type" style="margin-bottom:15px">
+        <input id="f_item" placeholder="Item (e.g. 8x10, Trading Card)" style="margin-bottom:15px">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px">
             <select id="f_source"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
-            <select id="f_role"><option>Actor</option><option>Musician</option><option>Athlete</option><option>Other</option></select>
+            <select id="f_role">
+                <option>Actor</option><option>Director</option><option>Musician</option><option>Athlete</option><option>Other</option>
+            </select>
         </div>
-        <textarea id="f_address" placeholder="Address" rows="3"></textarea>
-        <button onclick="addEntry()" class="btn-primary" style="width:100%; margin-top:15px;">SAVE ENTRY</button>
+        <textarea id="f_address" placeholder="Mailing Address" rows="3"></textarea>
+        <button onclick="addEntry()" class="btn-primary" style="width:100%; margin-top:20px;">SAVE ENTRY</button>
         <button onclick="toggleModal('addModal', false)" style="width:100%; background:none; border:none; color:var(--text-dim); margin-top:10px; cursor:pointer;">CANCEL</button>
     </div>
 </div>
@@ -179,17 +188,35 @@
 
     function renderGallery() {
         const query = document.getElementById("searchBar").value.toLowerCase();
-        let filtered = allData.filter(d => d.name.toLowerCase().includes(query));
-        
+        const sort = document.getElementById("sortOrder").value;
+        let filtered = allData.filter(d => (d.name+d.item_type+(d.role_type||'')).toLowerCase().includes(query));
+
+        if(sort === 'received') filtered = filtered.filter(d => d.status === 'received' || d.source === 'Purchased');
+
+        filtered.sort((a,b) => {
+            if(sort === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+            if(sort === 'alpha') return a.name.localeCompare(b.name);
+            if(sort === 'role') return (a.role_type || '').localeCompare(b.role_type || '');
+            if(sort === 'status') {
+                const weight = (i) => (i.source === 'Purchased' || i.status === 'received') ? 1 : (i.status === 'pending' ? 2 : 3);
+                return weight(a) - weight(b);
+            }
+            return 0;
+        });
+
         document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
+            const hasSuccess = d.status === 'received' || d.source === 'Purchased';
             const imgs = d.images || [];
             const cover = imgs.length > 0 ? imgs[0] : (d.img_url || 'https://via.placeholder.com/300?text=No+Photo');
             return `
             <div class="item-card" onclick="openProfile('${d.id}')">
                 <img class="card-img" src="${cover}">
                 <div class="card-content">
-                    <strong>${d.name}</strong><br>
-                    <small style="color:var(--text-dim)">${d.item_type} (${imgs.length || (d.img_url?1:0)} photos)</small>
+                    <strong style="display:block">${d.name}</strong>
+                    <span style="font-size:11px; color:var(--text-dim)">${d.item_type} (${imgs.length || (d.img_url?1:0)} items)</span>
+                    <div style="margin-top:10px; font-size:10px; font-weight:700; color:${hasSuccess?'var(--received)':'var(--pending)'}">
+                        ${d.status.toUpperCase()}
+                    </div>
                 </div>
             </div>`;
         }).join("");
@@ -199,53 +226,56 @@
         currentItem = allData.find(x => x.id === id);
         switchView('profile');
         
-        // Initialize multi-photo array if empty but old img_url exists
-        if(!currentItem.images || currentItem.images.length === 0) {
-            currentItem.images = currentItem.img_url ? [currentItem.img_url] : [];
+        // Data Migration: If no images array but old img_url exists, move it over
+        if((!currentItem.images || currentItem.images.length === 0) && currentItem.img_url) {
+            currentItem.images = [currentItem.img_url];
+        } else if(!currentItem.images) {
+            currentItem.images = [];
         }
 
         renderPhotoStrip();
         document.getElementById("p-name").innerText = currentItem.name;
-        document.getElementById("p-item-type").innerText = currentItem.item_type;
+        document.getElementById("p-item-type").innerText = `${currentItem.role_type} | ${currentItem.item_type}`;
         document.getElementById("p-notes").value = currentItem.address || "";
         document.getElementById("p-status-select").value = currentItem.status;
         document.getElementById("p-source-select").value = currentItem.source || "TTM";
         
-        // TMDB Bio Logic
-        document.getElementById("p-bio").innerText = "Searching...";
-        const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
-        const json = await res.json();
-        if(json.results?.[0]) {
-            const det = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
-            document.getElementById("p-bio").innerText = det.biography || "No bio.";
-        }
+        document.getElementById("p-bio").innerText = "Searching TMDB...";
+        try {
+            const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
+            const json = await res.json();
+            if(json.results?.[0]) {
+                const det = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
+                document.getElementById("p-bio").innerText = det.biography || "Bio not available.";
+            } else { document.getElementById("p-bio").innerText = "Signer not found on TMDB."; }
+        } catch { document.getElementById("p-bio").innerText = "Bio fetch error."; }
     }
 
     function renderPhotoStrip() {
         const strip = document.getElementById("p-photo-strip");
-        const main = document.getElementById("p-img");
+        const mainImg = document.getElementById("p-img");
         
-        if(currentItem.images.length > 0) {
-            main.src = currentItem.images[0];
+        if(currentItem.images && currentItem.images.length > 0) {
+            mainImg.src = currentItem.images[0];
             strip.innerHTML = currentItem.images.map((img, i) => `
                 <div class="strip-img-wrap">
-                    <img src="${img}" class="strip-img ${i===0?'active':''}" onclick="setMainPhoto(this, '${img}')">
-                    <button class="del-photo" onclick="deletePhoto(${i})">✕</button>
+                    <img src="${img}" class="strip-img ${i===0?'active':''}" onclick="setPreview('${img}', this)">
+                    <button class="del-photo-btn" onclick="deleteSinglePhoto(${i})">✕</button>
                 </div>
             `).join("");
         } else {
-            main.src = 'https://via.placeholder.com/400x500?text=Upload+Photo';
+            mainImg.src = 'https://via.placeholder.com/400x500?text=No+Photos';
             strip.innerHTML = "";
         }
     }
 
-    function setMainPhoto(el, src) {
+    function setPreview(src, el) {
         document.getElementById("p-img").src = src;
         document.querySelectorAll('.strip-img').forEach(img => img.classList.remove('active'));
         el.classList.add('active');
     }
 
-    async function handleMultiUpload(e) {
+    async function handleMultiFileUpload(e) {
         const file = e.target.files[0];
         if(!file) return;
         const reader = new FileReader();
@@ -260,23 +290,33 @@
         reader.readAsDataURL(file);
     }
 
-    async function deletePhoto(index) {
-        if(!confirm("Remove this photo?")) return;
+    async function deleteSinglePhoto(index) {
+        event.stopPropagation();
+        if(!confirm("Delete this specific photo?")) return;
         currentItem.images.splice(index, 1);
         await sb.from("Tracking").update({ images: currentItem.images }).eq("id", currentItem.id);
         renderPhotoStrip();
         loadData();
     }
 
-    // Standard helpers
-    async function updateItemStatus(status) { await sb.from("Tracking").update({ status }).eq("id", currentItem.id); loadData(); }
-    async function updateItemSource(source) { 
-        const status = source === 'Purchased' ? 'received' : currentItem.status;
-        await sb.from("Tracking").update({ source, status }).eq("id", currentItem.id); 
-        loadData(); 
+    async function updateItemStatus(status) {
+        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
+        loadData();
     }
-    async function updateNotes() { await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id); loadData(); }
-    
+
+    async function updateItemSource(source) {
+        let status = currentItem.status;
+        if(source === 'Purchased') status = 'received';
+        await sb.from("Tracking").update({ source, status }).eq("id", currentItem.id);
+        document.getElementById("p-status-select").value = status;
+        loadData();
+    }
+
+    async function updateNotes() {
+        await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
+        loadData();
+    }
+
     async function addEntry() {
         const entry = {
             name: document.getElementById("f_name").value,
@@ -289,27 +329,64 @@
         };
         await sb.from("Tracking").insert([entry]);
         toggleModal('addModal', false);
-        setTimeout(loadData, 500);
+        setTimeout(loadData, 400);
     }
 
     function renderAddressTable() {
-        document.getElementById("addressBody").innerHTML = allData.map(d => `<tr><td><b>${d.name}</b></td><td>${d.address || '—'}</td></tr>`).join("");
+        document.getElementById("addressBody").innerHTML = allData.map(d => `
+            <tr>
+                <td><b>${d.name}</b></td>
+                <td style="color:var(--text-dim)">${d.address || '—'}</td>
+            </tr>
+        `).join("");
     }
 
     function updateStats() {
+        const rec = allData.filter(d => d.status === 'received' || d.source === 'Purchased').length;
         document.getElementById('s-total').innerText = allData.length;
-        document.getElementById('s-success').innerText = allData.filter(d => d.status === 'received').length;
+        document.getElementById('s-success').innerText = rec;
         document.getElementById('s-pending').innerText = allData.filter(d => d.status === 'pending').length;
+        document.getElementById('s-mix').innerText = `${allData.filter(d => d.source==='TTM').length} TTM / ${allData.filter(d => d.source==='Purchased').length} Buy`;
     }
 
     function switchView(v) {
         document.querySelectorAll('.view-section, .nav-item').forEach(e => e.classList.remove('active'));
         document.getElementById(`view-${v}`).classList.add('active');
         if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('active');
+        if(v === 'stats') renderCharts();
+    }
+
+    function renderCharts() {
+        if(charts.a) charts.a.destroy(); if(charts.b) charts.b.destroy();
+        const s = { 
+            rec: allData.filter(d=>d.status==='received'||d.source==='Purchased').length, 
+            pen: allData.filter(d=>d.status==='pending').length, 
+            rts: allData.filter(d=>d.status==='rts').length 
+        };
+        charts.a = new Chart(document.getElementById('chartStatus'), { 
+            type: 'doughnut', 
+            data: { 
+                labels: ['Success', 'Pending', 'RTS'], 
+                datasets: [{ data: [s.rec, s.pen, s.rts], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] 
+            }
+        });
+        const roles = {};
+        allData.forEach(d => { roles[d.role_type] = (roles[d.role_type] || 0) + 1; });
+        charts.b = new Chart(document.getElementById('chartCats'), { 
+            type: 'bar', 
+            data: { labels: Object.keys(roles), datasets: [{ data: Object.values(roles), backgroundColor: '#818cf8' }] },
+            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
     }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "block" : "none"; }
-    async function deleteEntry() { if(confirm("Delete everything for this person?")) { await sb.from("Tracking").delete().eq("id", currentItem.id); switchView('summary'); loadData(); } }
+    async function deleteEntry() { 
+        if(confirm("Permanently delete this ENTIRE entry? This cannot be undone.")) { 
+            await sb.from("Tracking").delete().eq("id", currentItem.id); 
+            switchView('summary'); 
+            loadData(); 
+        } 
+    }
 
     loadData();
 </script>
