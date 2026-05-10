@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autograph Vault | Pro Multi-Photo</title>
+    <title>Autograph Vault | Pro Analytics</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -44,7 +44,6 @@
         .card-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
         .card-content { padding: 15px; }
 
-        /* Multi-Photo Thumbnails */
         .photo-strip { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 10px; min-height: 90px; }
         .strip-img-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
         .strip-img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; }
@@ -64,6 +63,8 @@
         input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; font-family: inherit; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; backdrop-filter: blur(4px); }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); width: 450px; border-radius: 16px; padding: 30px; border: 1px solid var(--border); }
+        
+        .days-badge { background: rgba(129, 140, 248, 0.2); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono'; }
     </style>
 </head>
 <body>
@@ -85,7 +86,7 @@
         <div class="stat-card" style="border-top-color: var(--primary)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">TOTAL ITEMS</span><span class="stat-value" id="s-total">0</span></div>
         <div class="stat-card" style="border-top-color: var(--received)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">SUCCESSES</span><span class="stat-value" id="s-success" style="color:var(--received)">0</span></div>
         <div class="stat-card" style="border-top-color: var(--pending)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">PENDING</span><span class="stat-value" id="s-pending" style="color:var(--pending)">0</span></div>
-        <div class="stat-card" style="border-top-color: var(--gold)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">MIX</span><span id="s-mix" style="display:block; margin-top:10px; font-size:13px; font-weight:600;">—</span></div>
+        <div class="stat-card" style="border-top-color: var(--gold)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION MIX</span><span id="s-mix" style="display:block; margin-top:10px; font-size:13px; font-weight:600;">—</span></div>
     </div>
 
     <div id="view-summary" class="view-section active">
@@ -128,13 +129,29 @@
             <div>
                 <h1 id="p-name" style="margin:0"></h1>
                 <p id="p-item-type" style="color:var(--primary); font-weight:700; font-size:20px; margin: 5px 0 25px 0;"></p>
+                
+                <div id="p-date-tracking" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom:20px; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
+                    <div>
+                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">DATE SENT</label>
+                        <input type="date" id="p-date-sent" onchange="updateDates()" style="margin-top:5px; padding:8px; font-size:12px;">
+                    </div>
+                    <div>
+                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">DATE RECEIVED</label>
+                        <input type="date" id="p-date-received" onchange="updateDates()" style="margin-top:5px; padding:8px; font-size:12px;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">OUTSTANDING</label>
+                        <div id="p-days-out" style="font-family:'JetBrains Mono'; font-weight:800; color:var(--primary); font-size:18px; margin-top:5px;">0 Days</div>
+                    </div>
+                </div>
+
                 <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px;">
                     <h3 style="margin-top:0; font-size:12px; color:var(--primary); text-transform:uppercase;">Signer Bio</h3>
                     <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading bio...</p>
                 </div>
                 <div style="margin-top:25px;">
                     <label style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION NOTES / ADDRESS</label>
-                    <textarea id="p-notes" rows="6" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add notes..."></textarea>
+                    <textarea id="p-notes" rows="4" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add notes..."></textarea>
                 </div>
                 <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px; width:100%;">Permanently Delete Entire Entry</button>
             </div>
@@ -208,11 +225,24 @@
             const hasSuccess = d.status === 'received' || d.source === 'Purchased';
             const imgs = d.images || [];
             const cover = imgs.length > 0 ? imgs[0] : (d.img_url || 'https://via.placeholder.com/300?text=No+Photo');
+            
+            // Calc days for small preview badge
+            let daysBadge = "";
+            if(d.date_sent && d.source === 'TTM') {
+                const start = new Date(d.date_sent);
+                const end = d.date_received ? new Date(d.date_received) : new Date();
+                const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+                daysBadge = `<span class="days-badge">${diff}d</span>`;
+            }
+
             return `
             <div class="item-card" onclick="openProfile('${d.id}')">
                 <img class="card-img" src="${cover}">
                 <div class="card-content">
-                    <strong style="display:block">${d.name}</strong>
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <strong style="max-width:70%">${d.name}</strong>
+                        ${daysBadge}
+                    </div>
                     <span style="font-size:11px; color:var(--text-dim)">${d.item_type} (${imgs.length || (d.img_url?1:0)} items)</span>
                     <div style="margin-top:10px; font-size:10px; font-weight:700; color:${hasSuccess?'var(--received)':'var(--pending)'}">
                         ${d.status.toUpperCase()}
@@ -226,7 +256,6 @@
         currentItem = allData.find(x => x.id === id);
         switchView('profile');
         
-        // Data Migration: If no images array but old img_url exists, move it over
         if((!currentItem.images || currentItem.images.length === 0) && currentItem.img_url) {
             currentItem.images = [currentItem.img_url];
         } else if(!currentItem.images) {
@@ -240,6 +269,15 @@
         document.getElementById("p-status-select").value = currentItem.status;
         document.getElementById("p-source-select").value = currentItem.source || "TTM";
         
+        // Load Dates
+        document.getElementById("p-date-sent").value = currentItem.date_sent || "";
+        document.getElementById("p-date-received").value = currentItem.date_received || "";
+        
+        // Show/Hide Tracking
+        document.getElementById("p-date-tracking").style.display = (currentItem.source === 'TTM') ? "grid" : "none";
+        calculateOutstanding();
+
+        // TMDB Logic
         document.getElementById("p-bio").innerText = "Searching TMDB...";
         try {
             const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
@@ -251,10 +289,23 @@
         } catch { document.getElementById("p-bio").innerText = "Bio fetch error."; }
     }
 
+    function calculateOutstanding() {
+        const sent = document.getElementById("p-date-sent").value;
+        const rec = document.getElementById("p-date-received").value;
+        if(!sent) {
+            document.getElementById("p-days-out").innerText = "—";
+            return;
+        }
+        const start = new Date(sent);
+        const end = rec ? new Date(rec) : new Date();
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        document.getElementById("p-days-out").innerText = diffDays + " Days";
+    }
+
     function renderPhotoStrip() {
         const strip = document.getElementById("p-photo-strip");
         const mainImg = document.getElementById("p-img");
-        
         if(currentItem.images && currentItem.images.length > 0) {
             mainImg.src = currentItem.images[0];
             strip.innerHTML = currentItem.images.map((img, i) => `
@@ -300,7 +351,14 @@
     }
 
     async function updateItemStatus(status) {
-        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
+        // Auto-set date received if marked received today
+        let update = { status: status };
+        if(status === 'received' && !document.getElementById("p-date-received").value) {
+            update.date_received = new Date().toISOString().split('T')[0];
+            document.getElementById("p-date-received").value = update.date_received;
+        }
+        await sb.from("Tracking").update(update).eq("id", currentItem.id);
+        calculateOutstanding();
         loadData();
     }
 
@@ -308,7 +366,19 @@
         let status = currentItem.status;
         if(source === 'Purchased') status = 'received';
         await sb.from("Tracking").update({ source, status }).eq("id", currentItem.id);
+        document.getElementById("p-date-tracking").style.display = (source === 'TTM') ? "grid" : "none";
         document.getElementById("p-status-select").value = status;
+        loadData();
+    }
+
+    async function updateDates() {
+        const sent = document.getElementById("p-date-sent").value;
+        const rec = document.getElementById("p-date-received").value;
+        await sb.from("Tracking").update({ 
+            date_sent: sent || null, 
+            date_received: rec || null 
+        }).eq("id", currentItem.id);
+        calculateOutstanding();
         loadData();
     }
 
@@ -318,13 +388,15 @@
     }
 
     async function addEntry() {
+        const source = document.getElementById("f_source").value;
         const entry = {
             name: document.getElementById("f_name").value,
             item_type: document.getElementById("f_item").value,
-            source: document.getElementById("f_source").value,
+            source: source,
             role_type: document.getElementById("f_role").value,
             address: document.getElementById("f_address").value,
-            status: document.getElementById("f_source").value === 'Purchased' ? 'received' : 'pending',
+            status: source === 'Purchased' ? 'received' : 'pending',
+            date_sent: source === 'TTM' ? new Date().toISOString().split('T')[0] : null,
             images: []
         };
         await sb.from("Tracking").insert([entry]);
