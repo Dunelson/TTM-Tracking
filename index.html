@@ -172,7 +172,8 @@
     let allData = [], currentItem = null, charts = {};
 
     async function loadData() {
-        const { data } = await sb.from("Tracking").select("*");
+        const { data, error } = await sb.from("Tracking").select("*");
+        if(error) console.error(error);
         allData = data || [];
         renderGallery();
         updateStats();
@@ -187,7 +188,7 @@
         if(sort === 'received') filtered = filtered.filter(d => d.status === 'received' || d.source === 'Purchased');
 
         filtered.sort((a,b) => {
-            if(sort === 'newest') return new Date(b.created_at) - new Date(a.created_at);
+            if(sort === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
             if(sort === 'alpha') return a.name.localeCompare(b.name);
             if(sort === 'role') return (a.role_type || '').localeCompare(b.role_type || '');
             if(sort === 'status') {
@@ -296,7 +297,7 @@
             });
             if(confirm(`Import ${newEntries.length} items?`)) {
                 await sb.from("Tracking").insert(newEntries);
-                loadData();
+                setTimeout(loadData, 500);
             }
         };
         reader.readAsText(file);
@@ -329,9 +330,19 @@
             address: document.getElementById("f_address").value,
             status: (document.getElementById("f_source").value==='Purchased'?'received':'pending')
         };
-        await sb.from("Tracking").insert([entry]);
-        toggleModal('addModal', false);
-        loadData();
+        
+        const { error } = await sb.from("Tracking").insert([entry]);
+        if(error) {
+            alert("Error adding entry: " + error.message);
+        } else {
+            // Success: Clear fields and close
+            document.getElementById("f_name").value = "";
+            document.getElementById("f_item").value = "";
+            document.getElementById("f_address").value = "";
+            toggleModal('addModal', false);
+            // Refresh data with small delay for Supabase indexing
+            setTimeout(loadData, 300);
+        }
     }
 
     function switchView(v) {
