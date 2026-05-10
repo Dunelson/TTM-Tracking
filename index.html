@@ -106,11 +106,24 @@
             <div>
                 <div class="p-img-frame"><img id="p-img" src=""></div>
                 <label class="upload-btn">UPLOAD PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)" style="display:none"></label>
-                <div style="margin-top:20px;">
-                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">ITEM STATUS</label>
-                    <select id="p-status-select" onchange="updateItemStatus(this.value)" style="margin-top:5px;">
-                        <option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>
-                    </select>
+                
+                <div style="margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">ITEM STATUS</label>
+                        <select id="p-status-select" onchange="updateItemStatus(this.value)" style="margin-top:5px;">
+                            <option value="pending">Pending</option>
+                            <option value="received">Received</option>
+                            <option value="rts">RTS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">ACQUISITION</label>
+                        <select id="p-source-select" onchange="updateItemSource(this.value)" style="margin-top:5px;">
+                            <option value="TTM">TTM</option>
+                            <option value="Purchased">Purchased</option>
+                            <option value="In-Person">In-Person</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div>
@@ -223,7 +236,9 @@
         document.getElementById("p-name").innerText = currentItem.name;
         document.getElementById("p-item-type").innerText = `${currentItem.role_type} | ${currentItem.item_type || "No Detail"}`;
         document.getElementById("p-notes").value = currentItem.address || "";
+        
         document.getElementById("p-status-select").value = currentItem.status;
+        document.getElementById("p-source-select").value = currentItem.source || "TTM";
         
         document.getElementById("p-bio").innerText = "Searching TMDB...";
         try {
@@ -247,6 +262,46 @@
             loadData();
         };
         reader.readAsDataURL(file);
+    }
+
+    async function updateItemStatus(status) {
+        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
+        loadData();
+    }
+
+    async function updateItemSource(source) {
+        let newStatus = currentItem.status;
+        if (source === 'Purchased') newStatus = 'received';
+        await sb.from("Tracking").update({ source: source, status: newStatus }).eq("id", currentItem.id);
+        document.getElementById("p-status-select").value = newStatus;
+        loadData();
+    }
+
+    async function updateNotes() {
+        await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
+        loadData();
+    }
+
+    async function addEntry() {
+        const entry = {
+            name: document.getElementById("f_name").value,
+            item_type: document.getElementById("f_item").value,
+            source: document.getElementById("f_source").value,
+            role_type: document.getElementById("f_role").value,
+            address: document.getElementById("f_address").value,
+            status: (document.getElementById("f_source").value==='Purchased'?'received':'pending')
+        };
+        
+        const { error } = await sb.from("Tracking").insert([entry]);
+        if(error) {
+            alert("Error adding entry: " + error.message);
+        } else {
+            document.getElementById("f_name").value = "";
+            document.getElementById("f_item").value = "";
+            document.getElementById("f_address").value = "";
+            toggleModal('addModal', false);
+            setTimeout(loadData, 300);
+        }
     }
 
     async function quickEditAddress(id) {
@@ -309,40 +364,6 @@
         document.getElementById('s-success').innerText = successes;
         document.getElementById('s-pending').innerText = allData.filter(d => d.status === 'pending').length;
         document.getElementById('s-mix').innerText = `${allData.filter(d => d.source==='TTM').length} TTM / ${allData.filter(d => d.source==='Purchased').length} Purchased`;
-    }
-
-    async function updateItemStatus(status) {
-        await sb.from("Tracking").update({ status, date_received: status==='received'?new Date().toISOString():null }).eq("id", currentItem.id);
-        loadData();
-    }
-
-    async function updateNotes() {
-        await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
-        loadData();
-    }
-
-    async function addEntry() {
-        const entry = {
-            name: document.getElementById("f_name").value,
-            item_type: document.getElementById("f_item").value,
-            source: document.getElementById("f_source").value,
-            role_type: document.getElementById("f_role").value,
-            address: document.getElementById("f_address").value,
-            status: (document.getElementById("f_source").value==='Purchased'?'received':'pending')
-        };
-        
-        const { error } = await sb.from("Tracking").insert([entry]);
-        if(error) {
-            alert("Error adding entry: " + error.message);
-        } else {
-            // Success: Clear fields and close
-            document.getElementById("f_name").value = "";
-            document.getElementById("f_item").value = "";
-            document.getElementById("f_address").value = "";
-            toggleModal('addModal', false);
-            // Refresh data with small delay for Supabase indexing
-            setTimeout(loadData, 300);
-        }
     }
 
     function switchView(v) {
