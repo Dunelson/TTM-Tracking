@@ -2,272 +2,189 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autograph Vault | Pro Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Autograph Vault Pro | Stable</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0f172a; --card-bg: #1e293b; --primary: #818cf8;
             --border: #334155; --text: #f1f5f9; --text-dim: #94a3b8;
-            --received: #4ade80; --rts: #fb7185; --pending: #38bdf8; --gold: #fbbf24;
+            --received: #4ade80; --rts: #fb7185; --pending: #38bdf8;
         }
 
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text); -webkit-tap-highlight-color: transparent; }
         
         .nav-bar { 
-            background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(10px);
-            padding: 15px 40px; display: flex; align-items: center; justify-content: space-between;
+            background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);
+            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
             border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
         }
-        .nav-left { display: flex; align-items: center; gap: 30px; }
-        .logo { font-weight: 900; font-size: 18px; color: var(--primary); letter-spacing: 1.5px; text-transform: uppercase; }
-        .nav-item { color: var(--text-dim); text-decoration: none; font-size: 12px; font-weight: 700; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: 0.2s; }
+        .logo { font-weight: 800; font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;}
+        .nav-item { color: var(--text-dim); text-decoration: none; font-size: 11px; font-weight: 700; cursor: pointer; padding: 10px; border-radius: 5px; transition: 0.2s; }
         .nav-item.active { color: var(--text); background: var(--border); }
 
-        .container { max-width: 1400px; margin: 30px auto; padding: 0 40px; }
-        .view-section { display: none; }
-        .view-section.active { display: block; }
+        .container { padding: 15px; max-width: 1200px; margin: 0 auto; }
 
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px; }
-        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); }
-        .stat-value { font-size: 24px; font-weight: 800; display: block; margin-top: 5px; font-family: 'JetBrains Mono'; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: var(--card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
+        .stat-value { font-size: 18px; font-weight: 800; font-family: 'JetBrains Mono'; display: block; color: var(--primary); }
 
-        .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
-        .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px 20px; border-radius: 10px; color: white; outline: none; min-width: 250px; }
-        .sort-select { background: var(--card-bg); border: 1px solid var(--border); color: white; padding: 11px; border-radius: 10px; cursor: pointer; }
+        .filter-bar { display: flex; gap: 8px; margin-bottom: 15px; }
+        .search-input { flex: 1; background: var(--card-bg); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; font-size: 16px; outline: none; }
 
-        .item-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-        .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; transition: 0.2s; cursor: pointer; position: relative; }
-        .item-card:hover { transform: translateY(-5px); border-color: var(--primary); }
-        .card-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
-        .card-content { padding: 15px; }
+        .item-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        @media (min-width: 768px) { .item-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
 
-        .photo-strip { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 10px; min-height: 90px; }
-        .strip-img-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
-        .strip-img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; }
+        .item-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; position: relative; cursor: pointer; transition: 0.2s; }
+        .item-card:hover { border-color: var(--primary); transform: translateY(-3px); }
+        .card-img-placeholder { width: 100%; aspect-ratio: 1/1; background: #000; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text-dim); font-weight: bold; text-align: center; padding: 10px; box-sizing: border-box; }
+        .card-content { padding: 10px; }
+
+        .profile-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .profile-grid { grid-template-columns: 400px 1fr; } }
+
+        .p-img-frame { width: 100%; aspect-ratio: 4/5; border-radius: 12px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; }
+        .p-img-frame img { width: 100%; height: 100%; object-fit: contain; }
+
+        .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; min-height: 80px; }
+        .strip-img-wrap { position: relative; width: 70px; height: 70px; flex-shrink: 0; }
+        .strip-img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; border: 2px solid var(--border); cursor: pointer; }
         .strip-img.active { border-color: var(--primary); }
-        .del-photo-btn { position: absolute; top: -5px; right: -5px; background: var(--rts); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .del-photo-btn { position: absolute; top: -5px; right: -5px; background: var(--rts); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; z-index: 2; }
 
-        .profile-grid { display: grid; grid-template-columns: 400px 1fr; gap: 40px; }
-        .p-img-frame { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid var(--border); background: #000; min-height: 400px; display: flex; align-items: center; justify-content: center; position: relative; }
-        .p-img-frame img { width: 100%; display: block; }
+        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-primary:active { opacity: 0.7; }
         
-        .upload-btn { display: inline-block; background: var(--primary); color: white; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: 700; margin-top: 10px; width: 100%; text-align: center; box-sizing: border-box; }
-        
-        .address-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
-        .address-table td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-content { background: var(--card-bg); border-radius: 15px; padding: 25px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
 
-        .btn-primary { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-        input, select, textarea { background: var(--bg-dark); border: 1px solid var(--border); padding: 12px; border-radius: 8px; color: white; width: 100%; box-sizing: border-box; font-family: inherit; }
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; backdrop-filter: blur(4px); }
-        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); width: 450px; border-radius: 16px; padding: 30px; border: 1px solid var(--border); }
-        
-        .days-badge { background: rgba(129, 140, 248, 0.2); color: var(--primary); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; font-family: 'JetBrains Mono'; }
+        select, input, textarea { background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 8px; font-family: inherit; }
     </style>
 </head>
 <body>
 
 <nav class="nav-bar">
-    <div class="nav-left">
-        <div class="logo">Autograph Vault</div>
-        <div class="nav-links">
-            <div id="nav-summary" class="nav-item active" onclick="switchView('summary')">COLLECTION</div>
-            <div id="nav-stats" class="nav-item" onclick="switchView('stats')">STATS</div>
-            <div id="nav-addresses" class="nav-item" onclick="switchView('addresses')">ADDRESSES</div>
-        </div>
+    <div class="logo">VAULT PRO</div>
+    <div style="display:flex; gap: 5px;">
+        <div id="nav-summary" class="nav-item active" onclick="switchView('summary')">COLLECTION</div>
+        <div id="nav-stats" class="nav-item" onclick="switchView('stats')">STATS</div>
+        <div id="nav-addresses" class="nav-item" onclick="switchView('addresses')">ADDRESSES</div>
     </div>
-    <button class="btn-primary" onclick="toggleModal('addModal', true)">+ ADD NEW ITEM</button>
 </nav>
 
 <div class="container">
-    <div class="stats-grid">
-        <div class="stat-card" style="border-top-color: var(--primary)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">TOTAL ITEMS</span><span class="stat-value" id="s-total">0</span></div>
-        <div class="stat-card" style="border-top-color: var(--received)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">SUCCESSES</span><span class="stat-value" id="s-success" style="color:var(--received)">0</span></div>
-        <div class="stat-card" style="border-top-color: var(--pending)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">PENDING</span><span class="stat-value" id="s-pending" style="color:var(--pending)">0</span></div>
-        <div class="stat-card" style="border-top-color: var(--gold)"><span style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION MIX</span><span id="s-mix" style="display:block; margin-top:10px; font-size:13px; font-weight:600;">—</span></div>
-    </div>
-
     <div id="view-summary" class="view-section active">
+        <div class="stats-grid">
+            <div class="stat-card"><small>TOTAL</small><span class="stat-value" id="s-total">0</span></div>
+            <div class="stat-card"><small style="color:var(--received)">SUCCESS</small><span class="stat-value" id="s-success">0</span></div>
+            <div class="stat-card"><small style="color:var(--pending)">PENDING</small><span class="stat-value" id="s-pending">0</span></div>
+            <div class="stat-card"><small>TTM / BUY</small><span id="s-mix" style="font-size:10px; font-weight:bold; display:block; margin-top:5px; color:var(--text-dim)">...</span></div>
+        </div>
+
         <div class="filter-bar">
-            <input type="text" id="searchBar" class="search-input" placeholder="Search names, items, or roles..." oninput="renderGallery()">
-            <select id="sortOrder" class="sort-select" onchange="renderGallery()">
-                <option value="newest">Newest First</option>
-                <option value="role">Group by Role</option>
-                <option value="received">Completed Only</option>
-                <option value="status">Group by Status</option>
-                <option value="alpha">Name (A-Z)</option>
-            </select>
+            <input type="text" id="searchBar" class="search-input" placeholder="Search names..." oninput="renderGallery()">
+            <button onclick="toggleModal('addModal', true)" style="background:var(--primary); border:none; border-radius:8px; width:50px; color:white; font-size:24px; font-weight:bold; cursor:pointer;">+</button>
         </div>
         <div class="item-grid" id="galleryGrid"></div>
     </div>
 
-    <div id="view-profile" class="view-section">
-        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); cursor:pointer; margin-bottom:20px; font-weight:700; display:flex; align-items:center; gap:8px;">← BACK TO COLLECTION</button>
+    <div id="view-profile" class="view-section" style="display:none;">
+        <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); padding:10px 0; font-weight:bold; cursor:pointer; font-size:14px;">← BACK TO COLLECTION</button>
         <div class="profile-grid">
             <div>
                 <div class="p-img-frame"><img id="p-img" src=""></div>
                 <div id="p-photo-strip" class="photo-strip"></div>
-                <label class="upload-btn">UPLOAD NEW PHOTO <input type="file" id="fileInput" accept="image/*" onchange="handleMultiFileUpload(event)" style="display:none"></label>
+                <label class="btn-primary" style="display:block; text-align:center; margin-top:10px;">
+                    UPLOAD PHOTO <input type="file" accept="image/*" onchange="handleMultiFileUpload(event)" style="display:none">
+                </label>
                 
-                <div style="margin-top:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <div>
-                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">STATUS</label>
-                        <select id="p-status-select" onchange="updateItemStatus(this.value)">
-                            <option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">ACQUISITION</label>
-                        <select id="p-source-select" onchange="updateItemSource(this.value)">
-                            <option value="TTM">TTM</option><option value="Purchased">Purchased</option><option value="In-Person">In-Person</option>
-                        </select>
-                    </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <div><small>STATUS</small><select id="p-status-select" style="width:100%; padding:10px;" onchange="updateItemStatus(this.value)"></select></div>
+                    <div><small>SOURCE</small><select id="p-source-select" style="width:100%; padding:10px;" onchange="updateItemSource(this.value)"></select></div>
                 </div>
             </div>
             <div>
-                <h1 id="p-name" style="margin:0"></h1>
-                <p id="p-item-type" style="color:var(--primary); font-weight:700; font-size:20px; margin: 5px 0 25px 0;"></p>
+                <h1 id="p-name" style="margin:0; font-size:28px;"></h1>
+                <p id="p-role-display" style="color:var(--primary); font-weight:bold; margin:5px 0 20px 0;"></p>
                 
-                <div id="p-date-tracking" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:15px; margin-bottom:20px; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
-                    <div>
-                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">DATE SENT</label>
-                        <input type="date" id="p-date-sent" onchange="updateDates()" style="margin-top:5px; padding:8px; font-size:12px;">
-                    </div>
-                    <div>
-                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">DATE RECEIVED</label>
-                        <input type="date" id="p-date-received" onchange="updateDates()" style="margin-top:5px; padding:8px; font-size:12px;">
-                    </div>
-                    <div style="display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                        <label style="font-size:10px; font-weight:700; color:var(--text-dim)">OUTSTANDING</label>
-                        <div id="p-days-out" style="font-family:'JetBrains Mono'; font-weight:800; color:var(--primary); font-size:18px; margin-top:5px;">0 Days</div>
-                    </div>
+                <div id="p-date-tracking" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin:15px 0; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; border:1px solid var(--border);">
+                    <div><small style="color:var(--text-dim)">DATE SENT</small><input type="date" id="p-date-sent" onchange="updateDates()" style="width:100%; border:none; padding:5px; margin-top:5px;"></div>
+                    <div><small style="color:var(--text-dim)">DATE REC'D</small><input type="date" id="p-date-received" onchange="updateDates()" style="width:100%; border:none; padding:5px; margin-top:5px;"></div>
+                    <div style="text-align:center;"><small style="color:var(--text-dim)">DAYS</small><div id="p-days-out" style="color:var(--primary); font-weight:800; font-size:20px; margin-top:5px;">0</div></div>
                 </div>
 
-                <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px;">
-                    <h3 style="margin-top:0; font-size:12px; color:var(--primary); text-transform:uppercase;">Signer Bio</h3>
-                    <p id="p-bio" style="font-size:14px; line-height:1.6; color:var(--text-dim)">Loading bio...</p>
-                </div>
-                <div style="margin-top:25px;">
-                    <label style="font-size:10px; font-weight:700; color:var(--text-dim)">COLLECTION NOTES / ADDRESS</label>
-                    <textarea id="p-notes" rows="4" onchange="updateNotes()" style="margin-top:10px;" placeholder="Add notes..."></textarea>
-                </div>
-                <button onclick="deleteEntry()" style="margin-top:40px; background:none; border:1px solid var(--rts); color:var(--rts); padding:10px; border-radius:8px; cursor:pointer; font-size:12px; width:100%;">Permanently Delete Entire Entry</button>
+                <small style="color:var(--text-dim)">ADDRESS / NOTES</small>
+                <textarea id="p-notes" rows="5" onchange="updateNotes()" style="width:100%; margin-top:5px; padding:12px; box-sizing:border-box;" placeholder="Enter details..."></textarea>
+                
+                <button onclick="deleteEntry()" style="color:var(--rts); background:none; border:1px solid var(--rts); width:100%; margin-top:40px; padding:10px; border-radius:8px; cursor:pointer; font-size:11px; font-weight:bold;">DELETE FULL ENTRY PERMANENTLY</button>
             </div>
         </div>
     </div>
 
-    <div id="view-stats" class="view-section">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div class="stat-card"><h3>STATUS DISTRIBUTION</h3><canvas id="chartStatus"></canvas></div>
-            <div class="stat-card"><h3>CATEGORIES</h3><canvas id="chartCats"></canvas></div>
+    <div id="view-stats" class="view-section" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr; gap:20px;">
+            <div class="stat-card"><h3>Status Mix</h3><canvas id="chartStatus"></canvas></div>
+            <div class="stat-card"><h3>By Role</h3><canvas id="chartCats"></canvas></div>
         </div>
     </div>
 
-    <div id="view-addresses" class="view-section">
-        <table class="address-table">
-            <thead><tr style="text-align:left; color:var(--text-dim); font-size:11px;"><th>RECIPIENT</th><th>ADDRESS / NOTES</th></tr></thead>
-            <tbody id="addressBody"></tbody>
-        </table>
+    <div id="view-addresses" class="view-section" style="display:none;">
+        <div id="addressList" style="display:flex; flex-direction:column; gap:10px;"></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
-        <h2 style="margin-top:0; color:var(--primary)">Add New Item</h2>
-        <input id="f_name" placeholder="Signer Name" style="margin-bottom:15px">
-        <input id="f_item" placeholder="Item (e.g. 8x10, Trading Card)" style="margin-bottom:15px">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px">
-            <select id="f_source"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
-            <select id="f_role">
-                <option>Actor</option><option>Director</option><option>Musician</option><option>Athlete</option><option>Other</option>
-            </select>
+        <h2 style="margin:0 0 20px 0; color:var(--primary)">New Entry</h2>
+        <input id="f_name" placeholder="Signer Name" class="search-input" style="width:100%; margin-bottom:12px; box-sizing:border-box;">
+        <input id="f_item" placeholder="Item (e.g. 8x10, Mini Helmet)" class="search-input" style="width:100%; margin-bottom:12px; box-sizing:border-box;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+            <select id="f_source" style="padding:12px;"><option>TTM</option><option>Purchased</option><option>In-Person</option></select>
+            <select id="f_role" style="padding:12px;"><option>Actor</option><option>Musician</option><option>Athlete</option><option>Other</option></select>
         </div>
-        <textarea id="f_address" placeholder="Mailing Address" rows="3"></textarea>
-        <button onclick="addEntry()" class="btn-primary" style="width:100%; margin-top:20px;">SAVE ENTRY</button>
-        <button onclick="toggleModal('addModal', false)" style="width:100%; background:none; border:none; color:var(--text-dim); margin-top:10px; cursor:pointer;">CANCEL</button>
+        <textarea id="f_address" placeholder="Address/Notes" rows="3" style="width:100%; padding:12px; box-sizing:border-box;"></textarea>
+        <button onclick="addEntry()" class="btn-primary" style="margin-top:20px;">SAVE TO DATABASE</button>
+        <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim); width:100%; margin-top:10px; cursor:pointer;">Cancel</button>
     </div>
 </div>
 
 <script>
     const sb = window.supabase.createClient("https://aeezsewfoozizduzuidv.supabase.co", "sb_publishable_l4QEnXwOlTZJnsN6VE6jrA_tBa_2aoz");
-    const TMDB_KEY = "d4656a893658ed711bcadef18dc23300";
     let allData = [], currentItem = null, charts = {};
 
-async function loadData() {
-    console.log("Attempting to fetch from Supabase...");
-    try {
-        const { data, error, status } = await sb.from("Tracking").select("*");
-        
+    // LAZY LOAD: Fetch lightweight text data first
+    async function loadData() {
+        const { data, error } = await sb.from("Tracking")
+            .select("id, name, item_type, status, source, role_type, date_sent, date_received, address")
+            .order('name', { ascending: true });
+
         if (error) {
-            alert("Database Error: " + error.message + " (Code: " + error.code + ")");
+            console.error("Fetch Error:", error);
+            alert("Database Timeout. Please refresh page.");
             return;
         }
 
-        console.log("Fetch Status:", status);
-        console.log("Data Received:", data);
-
         allData = data || [];
-        
-        if (allData.length === 0) {
-            document.getElementById("galleryGrid").innerHTML = 
-                `<div style="grid-column:1/-1; text-align:center; padding:50px;">
-                    <p>Database connected, but returned 0 rows.</p>
-                    <button onclick="loadData()" class="btn-primary" style="width:auto;">Retry Fetch</button>
-                </div>`;
-        } else {
-            renderGallery();
-        }
+        renderGallery();
         updateStats();
         renderAddressTable();
-    } catch (err) {
-        alert("Critical Connection Error: " + err.message);
     }
-}
+
     function renderGallery() {
         const query = document.getElementById("searchBar").value.toLowerCase();
-        const sort = document.getElementById("sortOrder").value;
-        let filtered = allData.filter(d => (d.name+d.item_type+(d.role_type||'')).toLowerCase().includes(query));
-
-        if(sort === 'received') filtered = filtered.filter(d => d.status === 'received' || d.source === 'Purchased');
-
-        filtered.sort((a,b) => {
-            if(sort === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-            if(sort === 'alpha') return a.name.localeCompare(b.name);
-            if(sort === 'role') return (a.role_type || '').localeCompare(b.role_type || '');
-            if(sort === 'status') {
-                const weight = (i) => (i.source === 'Purchased' || i.status === 'received') ? 1 : (i.status === 'pending' ? 2 : 3);
-                return weight(a) - weight(b);
-            }
-            return 0;
-        });
-
+        const filtered = allData.filter(d => d.name.toLowerCase().includes(query));
+        
         document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
-            const hasSuccess = d.status === 'received' || d.source === 'Purchased';
-            const imgs = d.images || [];
-            const cover = imgs.length > 0 ? imgs[0] : (d.img_url || 'https://via.placeholder.com/300?text=No+Photo');
-            
-            // Calc days for small preview badge
-            let daysBadge = "";
-            if(d.date_sent && d.source === 'TTM') {
-                const start = new Date(d.date_sent);
-                const end = d.date_received ? new Date(d.date_received) : new Date();
-                const diff = Math.floor((end - start) / (1000 * 60 * 60 * 24));
-                daysBadge = `<span class="days-badge">${diff}d</span>`;
-            }
-
             return `
             <div class="item-card" onclick="openProfile('${d.id}')">
-                <img class="card-img" src="${cover}">
+                <div class="card-img-placeholder">${d.name}<br><span style="font-size:8px; opacity:0.5">Click to view</span></div>
                 <div class="card-content">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <strong style="max-width:70%">${d.name}</strong>
-                        ${daysBadge}
-                    </div>
-                    <span style="font-size:11px; color:var(--text-dim)">${d.item_type} (${imgs.length || (d.img_url?1:0)} items)</span>
-                    <div style="margin-top:10px; font-size:10px; font-weight:700; color:${hasSuccess?'var(--received)':'var(--pending)'}">
-                        ${d.status.toUpperCase()}
+                    <strong style="font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</strong>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
+                        <small style="font-weight:bold; color:${d.status==='received'?'var(--received)':'var(--pending)'}">${d.status.toUpperCase()}</small>
+                        <small style="font-size:9px; color:var(--text-dim)">${d.source}</small>
                     </div>
                 </div>
             </div>`;
@@ -278,73 +195,54 @@ async function loadData() {
         currentItem = allData.find(x => x.id === id);
         switchView('profile');
         
-        if((!currentItem.images || currentItem.images.length === 0) && currentItem.img_url) {
-            currentItem.images = [currentItem.img_url];
-        } else if(!currentItem.images) {
-            currentItem.images = [];
-        }
-
-        renderPhotoStrip();
+        // Setup UI
         document.getElementById("p-name").innerText = currentItem.name;
-        document.getElementById("p-item-type").innerText = `${currentItem.role_type} | ${currentItem.item_type}`;
+        document.getElementById("p-role-display").innerText = `${currentItem.role_type} | ${currentItem.item_type}`;
         document.getElementById("p-notes").value = currentItem.address || "";
-        document.getElementById("p-status-select").value = currentItem.status;
-        document.getElementById("p-source-select").value = currentItem.source || "TTM";
-        
-        // Load Dates
         document.getElementById("p-date-sent").value = currentItem.date_sent || "";
         document.getElementById("p-date-received").value = currentItem.date_received || "";
         
-        // Show/Hide Tracking
-        document.getElementById("p-date-tracking").style.display = (currentItem.source === 'TTM') ? "grid" : "none";
+        const sStatus = document.getElementById("p-status-select");
+        sStatus.innerHTML = '<option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>';
+        sStatus.value = currentItem.status;
+        
+        const sSrc = document.getElementById("p-source-select");
+        sSrc.innerHTML = '<option value="TTM">TTM</option><option value="Purchased">Purchased</option><option value="In-Person">In-Person</option>';
+        sSrc.value = currentItem.source || "TTM";
+
         calculateOutstanding();
 
-        // TMDB Logic
-        document.getElementById("p-bio").innerText = "Searching TMDB...";
-        try {
-            const res = await fetch(`https://api.themoviedb.org/3/search/person?api_key=${TMDB_KEY}&query=${encodeURIComponent(currentItem.name)}`);
-            const json = await res.json();
-            if(json.results?.[0]) {
-                const det = await (await fetch(`https://api.themoviedb.org/3/person/${json.results[0].id}?api_key=${TMDB_KEY}`)).json();
-                document.getElementById("p-bio").innerText = det.biography || "Bio not available.";
-            } else { document.getElementById("p-bio").innerText = "Signer not found on TMDB."; }
-        } catch { document.getElementById("p-bio").innerText = "Bio fetch error."; }
-    }
+        // LAZY LOAD IMAGES: Only fetch photos for this specific person
+        document.getElementById("p-img").src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="; 
+        document.getElementById("p-photo-strip").innerHTML = "<small>Loading Photos...</small>";
 
-    function calculateOutstanding() {
-        const sent = document.getElementById("p-date-sent").value;
-        const rec = document.getElementById("p-date-received").value;
-        if(!sent) {
-            document.getElementById("p-days-out").innerText = "—";
-            return;
+        const { data, error } = await sb.from("Tracking").select("images").eq("id", id).single();
+        if(!error && data) {
+            currentItem.images = data.images || [];
+            renderPhotoStrip();
         }
-        const start = new Date(sent);
-        const end = rec ? new Date(rec) : new Date();
-        const diffTime = Math.abs(end - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        document.getElementById("p-days-out").innerText = diffDays + " Days";
     }
 
     function renderPhotoStrip() {
         const strip = document.getElementById("p-photo-strip");
-        const mainImg = document.getElementById("p-img");
+        const main = document.getElementById("p-img");
         if(currentItem.images && currentItem.images.length > 0) {
-            mainImg.src = currentItem.images[0];
+            main.src = currentItem.images[0];
             strip.innerHTML = currentItem.images.map((img, i) => `
                 <div class="strip-img-wrap">
-                    <img src="${img}" class="strip-img ${i===0?'active':''}" onclick="setPreview('${img}', this)">
+                    <img src="${img}" class="strip-img ${i===0?'active':''}" onclick="updateMainPreview('${img}', this)">
                     <button class="del-photo-btn" onclick="deleteSinglePhoto(${i})">✕</button>
                 </div>
             `).join("");
         } else {
-            mainImg.src = 'https://via.placeholder.com/400x500?text=No+Photos';
+            main.src = "https://via.placeholder.com/400x500?text=No+Photos+Uploaded";
             strip.innerHTML = "";
         }
     }
 
-    function setPreview(src, el) {
+    function updateMainPreview(src, el) {
         document.getElementById("p-img").src = src;
-        document.querySelectorAll('.strip-img').forEach(img => img.classList.remove('active'));
+        document.querySelectorAll('.strip-img').forEach(i => i.classList.remove('active'));
         el.classList.add('active');
     }
 
@@ -353,29 +251,25 @@ async function loadData() {
         if(!file) return;
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const imgData = event.target.result;
             if(!currentItem.images) currentItem.images = [];
-            currentItem.images.push(imgData);
+            currentItem.images.push(event.target.result);
             await sb.from("Tracking").update({ images: currentItem.images }).eq("id", currentItem.id);
             renderPhotoStrip();
-            loadData();
         };
         reader.readAsDataURL(file);
     }
 
-    async function deleteSinglePhoto(index) {
+    async function deleteSinglePhoto(idx) {
         event.stopPropagation();
-        if(!confirm("Delete this specific photo?")) return;
-        currentItem.images.splice(index, 1);
-        await sb.from("Tracking").update({ images: currentItem.images }).eq("id", currentItem.id);
+        if(!confirm("Delete this photo?")) return;
+        currentItem.images.splice(idx, 1);
+        await sb.from("Tracking").update({ images: currentData.images }).eq("id", currentItem.id);
         renderPhotoStrip();
-        loadData();
     }
 
-    async function updateItemStatus(status) {
-        // Auto-set date received if marked received today
-        let update = { status: status };
-        if(status === 'received' && !document.getElementById("p-date-received").value) {
+    async function updateItemStatus(val) {
+        let update = { status: val };
+        if(val === 'received' && !document.getElementById("p-date-received").value) {
             update.date_received = new Date().toISOString().split('T')[0];
             document.getElementById("p-date-received").value = update.date_received;
         }
@@ -384,105 +278,99 @@ async function loadData() {
         loadData();
     }
 
-    async function updateItemSource(source) {
-        let status = currentItem.status;
-        if(source === 'Purchased') status = 'received';
-        await sb.from("Tracking").update({ source, status }).eq("id", currentItem.id);
-        document.getElementById("p-date-tracking").style.display = (source === 'TTM') ? "grid" : "none";
-        document.getElementById("p-status-select").value = status;
+    async function updateItemSource(val) {
+        await sb.from("Tracking").update({ source: val }).eq("id", currentItem.id);
         loadData();
     }
 
     async function updateDates() {
-        const sent = document.getElementById("p-date-sent").value;
-        const rec = document.getElementById("p-date-received").value;
         await sb.from("Tracking").update({ 
-            date_sent: sent || null, 
-            date_received: rec || null 
+            date_sent: document.getElementById("p-date-sent").value || null,
+            date_received: document.getElementById("p-date-received").value || null
         }).eq("id", currentItem.id);
         calculateOutstanding();
-        loadData();
     }
 
     async function updateNotes() {
         await sb.from("Tracking").update({ address: document.getElementById("p-notes").value }).eq("id", currentItem.id);
-        loadData();
+    }
+
+    function calculateOutstanding() {
+        const s = document.getElementById("p-date-sent").value;
+        const r = document.getElementById("p-date-received").value;
+        if(!s) return document.getElementById("p-days-out").innerText = "—";
+        const start = new Date(s);
+        const end = r ? new Date(r) : new Date();
+        document.getElementById("p-days-out").innerText = Math.max(0, Math.floor((end - start) / 86400000));
     }
 
     async function addEntry() {
-        const source = document.getElementById("f_source").value;
+        const src = document.getElementById("f_source").value;
         const entry = {
             name: document.getElementById("f_name").value,
             item_type: document.getElementById("f_item").value,
-            source: source,
+            source: src,
             role_type: document.getElementById("f_role").value,
             address: document.getElementById("f_address").value,
-            status: source === 'Purchased' ? 'received' : 'pending',
-            date_sent: source === 'TTM' ? new Date().toISOString().split('T')[0] : null,
+            status: src === 'Purchased' ? 'received' : 'pending',
+            date_sent: src === 'TTM' ? new Date().toISOString().split('T')[0] : null,
             images: []
         };
         await sb.from("Tracking").insert([entry]);
         toggleModal('addModal', false);
-        setTimeout(loadData, 400);
-    }
-
-    function renderAddressTable() {
-        document.getElementById("addressBody").innerHTML = allData.map(d => `
-            <tr>
-                <td><b>${d.name}</b></td>
-                <td style="color:var(--text-dim)">${d.address || '—'}</td>
-            </tr>
-        `).join("");
+        loadData();
     }
 
     function updateStats() {
-        const rec = allData.filter(d => d.status === 'received' || d.source === 'Purchased').length;
+        const rec = allData.filter(d => d.status === 'received').length;
         document.getElementById('s-total').innerText = allData.length;
         document.getElementById('s-success').innerText = rec;
-        document.getElementById('s-pending').innerText = allData.filter(d => d.status === 'pending').length;
-        document.getElementById('s-mix').innerText = `${allData.filter(d => d.source==='TTM').length} TTM / ${allData.filter(d => d.source==='Purchased').length} Buy`;
+        document.getElementById('s-pending').innerText = allData.length - rec;
+        document.getElementById('s-mix').innerText = `${allData.filter(d=>d.source==='TTM').length} TTM / ${allData.filter(d=>d.source==='Purchased').length} Buy`;
+    }
+
+    function renderAddressTable() {
+        document.getElementById("addressList").innerHTML = allData.map(d => `
+            <div style="background:var(--card-bg); padding:15px; border-radius:10px; border:1px solid var(--border)">
+                <strong>${d.name}</strong><br>
+                <small style="color:var(--text-dim); line-height:1.6;">${d.address || 'No details stored.'}</small>
+            </div>
+        `).join("");
     }
 
     function switchView(v) {
-        document.querySelectorAll('.view-section, .nav-item').forEach(e => e.classList.remove('active'));
-        document.getElementById(`view-${v}`).classList.add('active');
+        document.querySelectorAll('.view-section, .nav-item').forEach(e => {
+            e.style.display = 'none';
+            e.classList.remove('active');
+        });
+        const targetView = document.getElementById(`view-${v}`);
+        targetView.style.display = 'block';
         if(document.getElementById(`nav-${v}`)) document.getElementById(`nav-${v}`).classList.add('active');
         if(v === 'stats') renderCharts();
+        window.scrollTo(0,0);
     }
 
     function renderCharts() {
-        if(charts.a) charts.a.destroy(); if(charts.b) charts.b.destroy();
-        const s = { 
-            rec: allData.filter(d=>d.status==='received'||d.source==='Purchased').length, 
-            pen: allData.filter(d=>d.status==='pending').length, 
-            rts: allData.filter(d=>d.status==='rts').length 
-        };
+        if(charts.a) charts.a.destroy();
+        const s = { rec: allData.filter(d=>d.status==='received').length, pen: allData.filter(d=>d.status==='pending').length };
         charts.a = new Chart(document.getElementById('chartStatus'), { 
             type: 'doughnut', 
-            data: { 
-                labels: ['Success', 'Pending', 'RTS'], 
-                datasets: [{ data: [s.rec, s.pen, s.rts], backgroundColor: ['#4ade80', '#38bdf8', '#fb7185'], borderWidth: 0 }] 
-            }
-        });
-        const roles = {};
-        allData.forEach(d => { roles[d.role_type] = (roles[d.role_type] || 0) + 1; });
-        charts.b = new Chart(document.getElementById('chartCats'), { 
-            type: 'bar', 
-            data: { labels: Object.keys(roles), datasets: [{ data: Object.values(roles), backgroundColor: '#818cf8' }] },
-            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+            data: { labels: ['Success', 'Pending'], datasets: [{ data: [s.rec, s.pen], backgroundColor: ['#4ade80', '#38bdf8'] }] },
+            options: { plugins: { legend: { labels: { color: 'white' } } } }
         });
     }
 
-    function toggleModal(id, show) { document.getElementById(id).style.display = show ? "block" : "none"; }
+    function toggleModal(id, show) { document.getElementById(id).style.display = show ? "flex" : "none"; }
+    
     async function deleteEntry() { 
-        if(confirm("Permanently delete this ENTIRE entry? This cannot be undone.")) { 
+        if(confirm("DELETE ENTIRE RECORD? This will remove all photos and data for this signer forever.")) { 
             await sb.from("Tracking").delete().eq("id", currentItem.id); 
             switchView('summary'); 
             loadData(); 
         } 
     }
 
-    loadData();
+    window.onload = loadData;
 </script>
 </body>
 </html>
