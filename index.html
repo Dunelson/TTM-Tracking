@@ -195,14 +195,36 @@
     const TMDB_KEY = "d4656a893658ed711bcadef18dc23300";
     let allData = [], currentItem = null, charts = {};
 
-    async function loadData() {
-        const { data } = await sb.from("Tracking").select("*");
+async function loadData() {
+    console.log("Attempting to fetch from Supabase...");
+    try {
+        const { data, error, status } = await sb.from("Tracking").select("*");
+        
+        if (error) {
+            alert("Database Error: " + error.message + " (Code: " + error.code + ")");
+            return;
+        }
+
+        console.log("Fetch Status:", status);
+        console.log("Data Received:", data);
+
         allData = data || [];
-        renderGallery();
+        
+        if (allData.length === 0) {
+            document.getElementById("galleryGrid").innerHTML = 
+                `<div style="grid-column:1/-1; text-align:center; padding:50px;">
+                    <p>Database connected, but returned 0 rows.</p>
+                    <button onclick="loadData()" class="btn-primary" style="width:auto;">Retry Fetch</button>
+                </div>`;
+        } else {
+            renderGallery();
+        }
         updateStats();
         renderAddressTable();
+    } catch (err) {
+        alert("Critical Connection Error: " + err.message);
     }
-
+}
     function renderGallery() {
         const query = document.getElementById("searchBar").value.toLowerCase();
         const sort = document.getElementById("sortOrder").value;
