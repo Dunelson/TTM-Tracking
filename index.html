@@ -83,7 +83,6 @@
             <div class="stat-card"><small>Pend</small><span class="stat-value" style="color:var(--pending)" id="main-pending">0</span></div>
             <div class="stat-card"><small>Avg Days</small><span class="stat-value" id="main-avg">0</span></div>
         </div>
-
         <div class="control-panel">
             <div class="filter-tabs">
                 <div class="tab active" onclick="setFilter('all', this)">ALL</div>
@@ -117,38 +116,20 @@
                 <h1 id="p-name" style="margin:0 0 2px 0; font-size:28px; font-weight:800;"></h1>
                 <div id="p-bio-tagline" style="color:var(--primary); font-size:14px; font-weight:600; margin-bottom:20px;"></div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:25px;">
-                    <div>
-                        <span class="field-label">Role (Actor, etc)</span>
-                        <input type="text" id="p-role-input" onchange="updateField('role_type', this.value)" style="width:100%;">
-                    </div>
-                    <div>
-                        <span class="field-label">Known For</span>
-                        <input type="text" id="p-known-input" onchange="updateField('known_for', this.value)" style="width:100%;">
-                    </div>
+                    <div><span class="field-label">Role</span><input type="text" id="p-role-input" onchange="updateField('role_type', this.value)" style="width:100%;"></div>
+                    <div><span class="field-label">Known For</span><input type="text" id="p-known-input" onchange="updateField('known_for', this.value)" style="width:100%;"></div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:25px;">
-                    <div>
-                        <span class="field-label">Status</span>
-                        <select id="p-status-select" onchange="updateField('status', this.value)" style="width:100%;"></select>
-                    </div>
-                    <div>
-                        <span class="field-label">Source</span>
-                        <select id="p-source-select" onchange="updateField('source', this.value)" style="width:100%;"></select>
-                    </div>
+                    <div><span class="field-label">Status</span><select id="p-status-select" onchange="updateField('status', this.value)" style="width:100%;"></select></div>
+                    <div><span class="field-label">Source</span><select id="p-source-select" onchange="updateField('source', this.value)" style="width:100%;"></select></div>
                 </div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:25px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px;">
-                    <div>
-                        <span class="field-label">Date Sent</span>
-                        <input type="date" id="p-date-sent" onchange="updateDates()" style="width:100%; border:none; padding:5px;">
-                    </div>
-                    <div>
-                        <span class="field-label">Date Received</span>
-                        <input type="date" id="p-date-received" onchange="updateDates()" style="width:100%; border:none; padding:5px;">
-                    </div>
+                    <div><span class="field-label">Date Sent</span><input type="date" id="p-date-sent" onchange="updateDates()" style="width:100%; border:none; padding:5px;"></div>
+                    <div><span class="field-label">Date Received</span><input type="date" id="p-date-received" onchange="updateDates()" style="width:100%; border:none; padding:5px;"></div>
                 </div>
                 <div class="field-group">
                     <span class="field-label">Notes & Address</span>
-                    <textarea id="p-notes" rows="6" onchange="updateField('address', this.value)" style="width:100%; box-sizing:border-box;" placeholder="Enter address or personal notes..."></textarea>
+                    <textarea id="p-notes" rows="6" onchange="updateField('address', this.value)" style="width:100%; box-sizing:border-box;"></textarea>
                 </div>
                 <button onclick="deleteEntry()" style="color:var(--rts); background:none; border:none; width:100%; margin-top:20px; cursor:pointer; opacity:0.4; font-size:11px; font-weight:bold;">DELETE RECORD PERMANENTLY</button>
             </div>
@@ -165,8 +146,8 @@
     </div>
 
     <div id="view-addresses" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
-            <h2>Address List</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; margin-bottom: 15px;">
+            <h2 style="margin:0;">Master Data List</h2>
             <div style="display:flex; gap:8px;">
                 <button onclick="exportToCSV()" style="background:var(--card-bg); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">📥 EXPORT ALL</button>
                 <label style="background:var(--primary); color:white; padding:8px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">
@@ -175,14 +156,13 @@
                 </label>
             </div>
         </div>
-        <p style="font-size:11px; color:var(--text-dim); margin-bottom:15px;">Headers required: <b>name, role_type, known_for, address, status, date_sent</b></p>
         <div id="addressList"></div>
     </div>
 </div>
 
 <div class="modal-overlay" id="addModal">
     <div class="modal-content">
-        <h2 style="margin:0 0 15px 0;">New Tracker</h2>
+        <h2>New Tracker</h2>
         <input id="f_name" placeholder="Signer Name" style="width:100%; margin-bottom:12px;">
         <input id="f_role" placeholder="Bio/Role" style="width:100%; margin-bottom:12px;">
         <textarea id="f_address" placeholder="Address/Notes" style="width:100%; margin-bottom:15px;" rows="3"></textarea>
@@ -216,24 +196,35 @@
         document.getElementById('stat-avg-large').innerText = avg;
     }
 
-    // UPDATED EXPORT: Exports entire allData array
+    // --- FULL EXPORT FIX ---
     function exportToCSV() {
+        console.log("Preparing export for " + allData.length + " items...");
         if (!allData.length) return alert("No data to export.");
+
         const headers = ["name", "role_type", "known_for", "address", "status", "date_sent", "date_received", "source"];
-        const rows = allData.map(d => [
-            `"${d.name || ''}"`, 
-            `"${d.role_type || ''}"`, 
-            `"${d.known_for || ''}"`, 
-            `"${(d.address || '').replace(/\n/g, ' ').replace(/"/g, '""')}"`, 
-            `"${d.status || ''}"`, 
-            `"${d.date_sent || ''}"`, 
-            `"${d.date_received || ''}"`, 
-            `"${d.source || ''}"`
-        ]);
-        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+        
+        // Map entire allData array regardless of status
+        const rows = allData.map(d => {
+            return [
+                `"${(d.name || '').replace(/"/g, '""')}"`,
+                `"${(d.role_type || '').replace(/"/g, '""')}"`,
+                `"${(d.known_for || '').replace(/"/g, '""')}"`,
+                `"${(d.address || '').replace(/\n/g, ' ').replace(/"/g, '""')}"`,
+                `"${d.status || ''}"`,
+                `"${d.date_sent || ''}"`,
+                `"${d.date_received || ''}"`,
+                `"${d.source || ''}"`
+            ].join(",");
+        });
+
+        const csvString = headers.join(",") + "\n" + rows.join("\n");
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", `full_vault_export_${new Date().toISOString().split('T')[0]}.csv`);
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `vault_master_backup_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -255,24 +246,23 @@
             }
             if (newEntries.length) {
                 const { error } = await sb.from("Tracking").insert(newEntries);
-                if (error) { alert("Upload failed. Ensure CSV format matches export."); console.error(error); }
-                else { alert(`Imported ${newEntries.length} items successfully!`); loadData(); }
+                if (error) alert("Import Error");
+                else { alert(`Success! Imported ${newEntries.length} items.`); loadData(); }
             }
         };
         reader.readAsText(file);
     }
 
     function renderAddressTable() {
-        // Simple alpha sort for list view
-        const sortedList = [...allData].sort((a,b) => a.name.localeCompare(b.name));
-        document.getElementById("addressList").innerHTML = sortedList.map(d => `
+        const sorted = [...allData].sort((a,b) => a.name.localeCompare(b.name));
+        document.getElementById("addressList").innerHTML = sorted.map(d => `
             <div onclick="openProfile('${d.id}')" style="background:var(--card-bg); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border); cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <strong style="color:var(--primary); font-size:16px;">${d.name}</strong>
-                        <div style="color:var(--text-dim); font-size:12px; margin-top:4px;">${d.address || 'No address stored'}</div>
+                        <strong style="color:var(--primary); font-size:15px;">${d.name}</strong>
+                        <div style="color:var(--text-dim); font-size:11px; margin-top:4px;">${d.address || 'No details'}</div>
                     </div>
-                    <div style="color:var(--text-dim); font-size:18px;">›</div>
+                    <div style="color:${d.status === 'received' ? 'var(--received)' : 'var(--text-dim)'}; font-size:10px; font-weight:800; text-transform:uppercase;">${d.status}</div>
                 </div>
             </div>`).join("");
     }
