@@ -105,7 +105,6 @@
 
     <div id="view-profile" style="display:none;">
         <button onclick="switchView('summary')" style="background:none; border:none; color:var(--primary); padding:15px 0; font-weight:800; cursor:pointer; font-size:13px;">← BACK TO VAULT</button>
-        
         <div class="profile-container">
             <div class="p-image-section">
                 <div class="p-img-frame"><img id="p-img" src=""></div>
@@ -114,11 +113,9 @@
                     + UPLOAD PHOTO <input type="file" accept="image/*" onchange="uploadToStorage(event)" style="display:none">
                 </label>
             </div>
-
             <div class="p-info-section">
                 <h1 id="p-name" style="margin:0 0 2px 0; font-size:28px; font-weight:800;"></h1>
                 <div id="p-bio-tagline" style="color:var(--primary); font-size:14px; font-weight:600; margin-bottom:20px;"></div>
-
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:25px;">
                     <div>
                         <span class="field-label">Role (Actor, etc)</span>
@@ -129,7 +126,6 @@
                         <input type="text" id="p-known-input" onchange="updateField('known_for', this.value)" style="width:100%;">
                     </div>
                 </div>
-
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:25px;">
                     <div>
                         <span class="field-label">Status</span>
@@ -140,7 +136,6 @@
                         <select id="p-source-select" onchange="updateField('source', this.value)" style="width:100%;"></select>
                     </div>
                 </div>
-
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:25px; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px;">
                     <div>
                         <span class="field-label">Date Sent</span>
@@ -151,12 +146,10 @@
                         <input type="date" id="p-date-received" onchange="updateDates()" style="width:100%; border:none; padding:5px;">
                     </div>
                 </div>
-
                 <div class="field-group">
                     <span class="field-label">Notes & Address</span>
                     <textarea id="p-notes" rows="6" onchange="updateField('address', this.value)" style="width:100%; box-sizing:border-box;" placeholder="Enter address or personal notes..."></textarea>
                 </div>
-
                 <button onclick="deleteEntry()" style="color:var(--rts); background:none; border:none; width:100%; margin-top:20px; cursor:pointer; opacity:0.4; font-size:11px; font-weight:bold;">DELETE RECORD PERMANENTLY</button>
             </div>
         </div>
@@ -164,10 +157,20 @@
 
     <div id="view-stats" style="display:none;">
         <h2 style="margin-top:20px;">Success Metrics</h2>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:30px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
             <div class="stat-card" style="padding:20px;"><small>Success Rate</small><div id="stat-rate" style="font-size:32px; font-weight:800; color:var(--received);">0%</div></div>
             <div class="stat-card" style="padding:20px;"><small>Avg Turnaround</small><div id="stat-avg-large" style="font-size:32px; font-weight:800; color:var(--primary);">0</div><small>Days</small></div>
         </div>
+
+        <div style="background:var(--card-bg); padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px; display:flex; flex-direction:column; gap:12px;">
+            <button onclick="exportToCSV()" class="btn-primary" style="background:#475569;">📥 EXPORT TO CSV (SPREADSHEET)</button>
+            <label class="btn-primary" style="background:#6366f1; text-align:center; cursor:pointer;">
+                📤 IMPORT FROM CSV
+                <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" style="display:none">
+            </label>
+            <small style="color:var(--text-dim); text-align:center;">Headers: name, role_type, known_for, address, status, date_sent</small>
+        </div>
+
         <div style="background:var(--card-bg); padding:20px; border-radius:15px; border:1px solid var(--border);"><canvas id="chartStatus" style="max-height:300px;"></canvas></div>
     </div>
 
@@ -181,7 +184,7 @@
     <div class="modal-content">
         <h2 style="margin:0 0 15px 0;">New Tracker</h2>
         <input id="f_name" placeholder="Signer Name" style="width:100%; margin-bottom:12px;">
-        <input id="f_role" placeholder="Bio/Role (Actor, Athlete, etc.)" style="width:100%; margin-bottom:12px;">
+        <input id="f_role" placeholder="Bio/Role" style="width:100%; margin-bottom:12px;">
         <textarea id="f_address" placeholder="Address/Notes" style="width:100%; margin-bottom:15px;" rows="3"></textarea>
         <button onclick="addEntry()" class="btn-primary">CREATE RECORD</button>
         <button onclick="toggleModal('addModal', false)" style="background:none; border:none; color:var(--text-dim); width:100%; margin-top:10px; cursor:pointer;">Cancel</button>
@@ -205,13 +208,66 @@
         const received = allData.filter(d => d.status === 'received');
         const daysArray = received.filter(d => d.date_sent && d.date_received).map(d => (new Date(d.date_received) - new Date(d.date_sent)) / 86400000);
         const avg = daysArray.length ? Math.round(daysArray.reduce((a,b)=>a+b,0)/daysArray.length) : 0;
-        
         document.getElementById('main-total').innerText = allData.length;
         document.getElementById('main-success').innerText = received.length;
         document.getElementById('main-pending').innerText = allData.filter(d => d.status === 'pending').length;
         document.getElementById('main-avg').innerText = avg;
         document.getElementById('stat-rate').innerText = (allData.length ? Math.round((received.length / allData.length) * 100) : 0) + "%";
         document.getElementById('stat-avg-large').innerText = avg;
+    }
+
+    function exportToCSV() {
+        if (!allData.length) return alert("No data to export.");
+        const headers = ["name", "role_type", "known_for", "address", "status", "date_sent", "date_received", "source"];
+        const rows = allData.map(d => [
+            `"${d.name || ''}"`, `"${d.role_type || ''}"`, `"${d.known_for || ''}"`, 
+            `"${(d.address || '').replace(/\n/g, ' ')}"`, `"${d.status || ''}"`, 
+            `"${d.date_sent || ''}"`, `"${d.date_received || ''}"`, `"${d.source || ''}"`
+        ]);
+        let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", `vault_export_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function handleCSVUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const lines = e.target.result.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const newEntries = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+                let entry = {};
+                headers.forEach((h, idx) => entry[h] = values[idx] || null);
+                if (entry.name) { entry.images = []; newEntries.push(entry); }
+            }
+            if (newEntries.length) {
+                const { error } = await sb.from("Tracking").insert(newEntries);
+                if (error) alert("Upload failed");
+                else { alert(`Imported ${newEntries.length} items!`); loadData(); }
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function renderAddressTable() {
+        document.getElementById("addressList").innerHTML = allData.map(d => `
+            <div onclick="openProfile('${d.id}')" style="background:var(--card-bg); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border); cursor:pointer;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong style="color:var(--primary); font-size:16px;">${d.name}</strong>
+                        <div style="color:var(--text-dim); font-size:12px; margin-top:4px;">${d.address || 'No address stored'}</div>
+                    </div>
+                    <div style="color:var(--text-dim); font-size:18px;">›</div>
+                </div>
+            </div>`).join("");
     }
 
     function renderGallery() {
@@ -222,15 +278,13 @@
             if (currentSort === 'sent') return new Date(b.date_sent || 0) - new Date(a.date_sent || 0);
             if (currentSort === 'received') return new Date(b.date_received || 0) - new Date(a.date_received || 0);
         });
-
         document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
             const img = (d.images && d.images.length > 0) ? d.images[0] : 'https://via.placeholder.com/300?text=No+Photo';
-            const dateDisplay = d.status === 'received' ? `Rec'd: ${d.date_received || '?'}` : `Sent: ${d.date_sent || '?'}`;
             return `<div class="item-card" onclick="openProfile('${d.id}')">
                 <img class="card-img" src="${img}" loading="lazy">
                 <div class="card-content">
                     <strong style="font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</strong>
-                    <span class="card-date">${dateDisplay}</span>
+                    <span class="card-date">${d.status === 'received' ? 'Rec: ' + (d.date_received || '?') : 'Sent: ' + (d.date_sent || '?')}</span>
                 </div>
             </div>`;
         }).join("");
@@ -239,27 +293,22 @@
     async function openProfile(id) {
         currentItem = allData.find(x => x.id === id);
         switchView('profile', true);
-        
         document.getElementById("p-name").innerText = currentItem.name;
         document.getElementById("p-bio-tagline").innerText = `${currentItem.role_type || ''} ${currentItem.known_for ? '• ' + currentItem.known_for : ''}`;
-        
         document.getElementById("p-role-input").value = currentItem.role_type || "";
         document.getElementById("p-known-input").value = currentItem.known_for || "";
         document.getElementById("p-notes").value = currentItem.address || "";
         document.getElementById("p-date-sent").value = currentItem.date_sent || "";
         document.getElementById("p-date-received").value = currentItem.date_received || "";
-        
         document.getElementById("p-status-select").innerHTML = '<option value="pending">Pending</option><option value="received">Received</option><option value="rts">RTS</option>';
         document.getElementById("p-status-select").value = currentItem.status;
         document.getElementById("p-source-select").innerHTML = '<option value="TTM">TTM</option><option value="Purchased">Purchased</option>';
         document.getElementById("p-source-select").value = currentItem.source || "TTM";
-        
         renderPhotoStrip();
     }
 
     function renderPhotoStrip() {
-        const strip = document.getElementById("p-photo-strip");
-        const main = document.getElementById("p-img");
+        const strip = document.getElementById("p-photo-strip"), main = document.getElementById("p-img");
         if(currentItem.images && currentItem.images.length > 0) {
             main.src = currentItem.images[0];
             strip.innerHTML = currentItem.images.map((img, i) => `
@@ -267,49 +316,36 @@
                     <button class="del-btn" onclick="deletePhoto(${i})">✕</button>
                     <img src="${img}" class="strip-img ${i===0?'active':''}" onclick="document.getElementById('p-img').src='${img}'; document.querySelectorAll('.strip-img').forEach(s=>s.classList.remove('active')); this.classList.add('active')">
                 </div>`).join("");
-        } else {
-            main.src = 'https://via.placeholder.com/400x500?text=No+Photos';
-            strip.innerHTML = "";
-        }
+        } else { main.src = 'https://via.placeholder.com/400x500?text=No+Photos'; strip.innerHTML = ""; }
     }
 
     async function deletePhoto(idx) {
-        event.stopPropagation();
-        if(!confirm("Delete this photo?")) return;
+        event.stopPropagation(); if(!confirm("Delete photo?")) return;
         currentItem.images.splice(idx, 1);
         await sb.from("Tracking").update({ images: currentItem.images }).eq("id", currentItem.id);
-        renderPhotoStrip();
-        loadData();
+        renderPhotoStrip(); loadData();
     }
 
     async function uploadToStorage(e) {
-        const file = e.target.files[0];
-        if(!file) return;
-        const fileName = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
-        const { error } = await sb.storage.from('autographs').upload(fileName, file);
-        if(error) return alert("Upload failed");
-        const { data: urlData } = sb.storage.from('autographs').getPublicUrl(fileName);
+        const file = e.target.files[0]; if(!file) return;
+        const name = `${Date.now()}-${file.name.replace(/\s/g, '_')}`;
+        await sb.storage.from('autographs').upload(name, file);
+        const { data } = sb.storage.from('autographs').getPublicUrl(name);
         if(!currentItem.images) currentItem.images = [];
-        currentItem.images.push(urlData.publicUrl);
+        currentItem.images.push(data.publicUrl);
         await sb.from("Tracking").update({ images: currentItem.images }).eq("id", currentItem.id);
-        renderPhotoStrip();
-        loadData();
+        renderPhotoStrip(); loadData();
     }
 
     async function updateDates() {
-        await sb.from("Tracking").update({ 
-            date_sent: document.getElementById("p-date-sent").value || null, 
-            date_received: document.getElementById("p-date-received").value || null 
-        }).eq("id", currentItem.id);
+        await sb.from("Tracking").update({ date_sent: document.getElementById("p-date-sent").value || null, date_received: document.getElementById("p-date-received").value || null }).eq("id", currentItem.id);
         loadData();
     }
 
     async function updateField(col, val) {
         await sb.from("Tracking").update({ [col]: val }).eq("id", currentItem.id);
-        // Live update the tagline if role or known_for changes
         if(col === 'role_type' || col === 'known_for') {
-            const r = document.getElementById("p-role-input").value;
-            const k = document.getElementById("p-known-input").value;
+            const r = document.getElementById("p-role-input").value, k = document.getElementById("p-known-input").value;
             document.getElementById("p-bio-tagline").innerText = `${r} ${k ? '• ' + k : ''}`;
         }
         loadData();
@@ -318,21 +354,13 @@
     function setFilter(val, el) {
         currentFilter = val;
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
-        renderGallery();
+        el.classList.add('active'); renderGallery();
     }
 
     function setSort(val) { currentSort = val; renderGallery(); }
 
-    function renderAddressTable() {
-        document.getElementById("addressList").innerHTML = allData.map(d => `<div style="background:var(--card-bg); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border);"><strong>${d.name}</strong><br><small style="color:var(--text-dim)">${d.address || 'No details'}</small></div>`).join("");
-    }
-
     function switchView(v, isProfile = false) {
-        document.getElementById('view-summary').style.display = 'none';
-        document.getElementById('view-profile').style.display = 'none';
-        document.getElementById('view-stats').style.display = 'none';
-        document.getElementById('view-addresses').style.display = 'none';
+        ['summary', 'profile', 'stats', 'addresses'].forEach(view => document.getElementById(`view-${view}`).style.display = 'none');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(`view-${v}`).style.display = 'block';
         if(!isProfile) document.getElementById(`btn-${v}`).classList.add('active');
@@ -346,23 +374,15 @@
         chartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: { labels: ['Received', 'Pending'], datasets: [{ data: [allData.filter(d=>d.status==='received').length, allData.filter(d=>d.status==='pending').length], backgroundColor: ['#4ade80', '#38bdf8'], borderWidth: 0 }] },
-            options: { plugins: { legend: { position: 'bottom', labels: { color: '#f1f5f9', padding: 20 } } } }
+            options: { plugins: { legend: { position: 'bottom', labels: { color: '#f1f5f9' } } } }
         });
     }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "flex" : "none"; }
     async function addEntry() {
-        const entry = {
-            name: document.getElementById("f_name").value,
-            role_type: document.getElementById("f_role").value,
-            address: document.getElementById("f_address").value,
-            status: 'pending',
-            date_sent: new Date().toISOString().split('T')[0],
-            images: []
-        };
+        const entry = { name: document.getElementById("f_name").value, role_type: document.getElementById("f_role").value, address: document.getElementById("f_address").value, status: 'pending', date_sent: new Date().toISOString().split('T')[0], images: [] };
         await sb.from("Tracking").insert([entry]);
-        toggleModal('addModal', false);
-        loadData();
+        toggleModal('addModal', false); loadData();
     }
     async function deleteEntry() { if(confirm("Delete record?")) { await sb.from("Tracking").delete().eq("id", currentItem.id); switchView('summary'); loadData(); } }
     loadData();
