@@ -161,21 +161,21 @@
             <div class="stat-card" style="padding:20px;"><small>Success Rate</small><div id="stat-rate" style="font-size:32px; font-weight:800; color:var(--received);">0%</div></div>
             <div class="stat-card" style="padding:20px;"><small>Avg Turnaround</small><div id="stat-avg-large" style="font-size:32px; font-weight:800; color:var(--primary);">0</div><small>Days</small></div>
         </div>
-
-        <div style="background:var(--card-bg); padding:20px; border-radius:15px; border:1px solid var(--border); margin-bottom:20px; display:flex; flex-direction:column; gap:12px;">
-            <button onclick="exportToCSV()" class="btn-primary" style="background:#475569;">📥 EXPORT TO CSV (SPREADSHEET)</button>
-            <label class="btn-primary" style="background:#6366f1; text-align:center; cursor:pointer;">
-                📤 IMPORT FROM CSV
-                <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" style="display:none">
-            </label>
-            <small style="color:var(--text-dim); text-align:center;">Headers: name, role_type, known_for, address, status, date_sent</small>
-        </div>
-
         <div style="background:var(--card-bg); padding:20px; border-radius:15px; border:1px solid var(--border);"><canvas id="chartStatus" style="max-height:300px;"></canvas></div>
     </div>
 
     <div id="view-addresses" style="display:none;">
-        <h2 style="margin-top:20px;">Address List</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+            <h2>Address List</h2>
+            <div style="display:flex; gap:8px;">
+                <button onclick="exportToCSV()" style="background:var(--card-bg); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">📥 EXPORT ALL</button>
+                <label style="background:var(--primary); color:white; padding:8px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">
+                    📤 IMPORT CSV
+                    <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVUpload(event)" style="display:none">
+                </label>
+            </div>
+        </div>
+        <p style="font-size:11px; color:var(--text-dim); margin-bottom:15px;">Headers required: <b>name, role_type, known_for, address, status, date_sent</b></p>
         <div id="addressList"></div>
     </div>
 </div>
@@ -216,26 +216,31 @@
         document.getElementById('stat-avg-large').innerText = avg;
     }
 
+    // UPDATED EXPORT: Exports entire allData array
     function exportToCSV() {
         if (!allData.length) return alert("No data to export.");
         const headers = ["name", "role_type", "known_for", "address", "status", "date_sent", "date_received", "source"];
         const rows = allData.map(d => [
-            `"${d.name || ''}"`, `"${d.role_type || ''}"`, `"${d.known_for || ''}"`, 
-            `"${(d.address || '').replace(/\n/g, ' ')}"`, `"${d.status || ''}"`, 
-            `"${d.date_sent || ''}"`, `"${d.date_received || ''}"`, `"${d.source || ''}"`
+            `"${d.name || ''}"`, 
+            `"${d.role_type || ''}"`, 
+            `"${d.known_for || ''}"`, 
+            `"${(d.address || '').replace(/\n/g, ' ').replace(/"/g, '""')}"`, 
+            `"${d.status || ''}"`, 
+            `"${d.date_sent || ''}"`, 
+            `"${d.date_received || ''}"`, 
+            `"${d.source || ''}"`
         ]);
         let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", `vault_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute("download", `full_vault_export_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
 
     async function handleCSVUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = async function(e) {
             const lines = e.target.result.split('\n');
@@ -243,22 +248,24 @@
             const newEntries = [];
             for (let i = 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, ''));
+                const values = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/"/g, '').replace(/""/g, '"'));
                 let entry = {};
                 headers.forEach((h, idx) => entry[h] = values[idx] || null);
                 if (entry.name) { entry.images = []; newEntries.push(entry); }
             }
             if (newEntries.length) {
                 const { error } = await sb.from("Tracking").insert(newEntries);
-                if (error) alert("Upload failed");
-                else { alert(`Imported ${newEntries.length} items!`); loadData(); }
+                if (error) { alert("Upload failed. Ensure CSV format matches export."); console.error(error); }
+                else { alert(`Imported ${newEntries.length} items successfully!`); loadData(); }
             }
         };
         reader.readAsText(file);
     }
 
     function renderAddressTable() {
-        document.getElementById("addressList").innerHTML = allData.map(d => `
+        // Simple alpha sort for list view
+        const sortedList = [...allData].sort((a,b) => a.name.localeCompare(b.name));
+        document.getElementById("addressList").innerHTML = sortedList.map(d => `
             <div onclick="openProfile('${d.id}')" style="background:var(--card-bg); padding:15px; border-radius:12px; margin-bottom:10px; border:1px solid var(--border); cursor:pointer;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
