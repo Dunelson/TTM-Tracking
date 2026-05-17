@@ -126,6 +126,15 @@
         </div>
     </div>
 
+    <div id="view-stats" style="display:none;">
+        <h2 style="margin-top:20px;">Success Metrics</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:20px;">
+            <div class="stat-card" style="padding:20px;"><small>Success Rate</small><div id="stat-rate" style="font-size:32px; font-weight:800; color:var(--received);">0%</div></div>
+            <div class="stat-card" style="padding:20px;"><small>Avg Turnaround</small><div id="stat-avg-large" style="font-size:32px; font-weight:800; color:var(--primary);">0</div><small>Days</small></div>
+        </div>
+        <div style="background:var(--card-bg); padding:20px; border-radius:15px; border:1px solid var(--border);"><canvas id="chartStatus" style="max-height:300px;"></canvas></div>
+    </div>
+
     <div id="view-addresses" style="display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
             <h2>Master List</h2>
@@ -154,7 +163,7 @@
 
 <script>
     const sb = window.supabase.createClient("https://aeezsewfoozizduzuidv.supabase.co", "sb_publishable_l4QEnXwOlTZJnsN6VE6jrA_tBa_2aoz");
-    let allData = [], currentFilter = 'all', currentSort = 'name', currentItem = null;
+    let allData = [], currentFilter = 'all', currentSort = 'name', currentItem = null, chartInstance = null;
 
     async function loadData() {
         const { data, error } = await sb.from("Tracking").select("*");
@@ -165,7 +174,6 @@
         renderAddressTable();
     }
 
-    // ROBUST CSV PARSER: Handles commas inside quotes correctly
     function parseCSVLine(line) {
         const result = [];
         let cur = '', inQuote = false;
@@ -182,6 +190,7 @@
         return result;
     }
 
+    // VERIFIED AND ALIGNED DIRECTLY TO YOUR BLUEPRINT COLUMNS
     async function handleCSVUpload(event) {
         const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
@@ -197,10 +206,10 @@
                 const values = parseCSVLine(lines[i]);
                 const entry = {};
                 
-                // Map only core fields to prevent shifting
                 headers.forEach((h, idx) => {
                     const val = values[idx];
-                    if (['name', 'role_type', 'known_for', 'address', 'status', 'date_sent', 'date_received', 'source'].includes(h)) {
+                    // Clean mapping to ensure matching tracking blueprint keys
+                    if (['name', 'role_type', 'known_for', 'address', 'status', 'date_sent', 'date_received', 'source', 'signature_status', 'legitimacy', 'item_type', 'tmdb_id', 'img_url'].includes(h)) {
                         entry[h] = val || null;
                     }
                 });
@@ -212,7 +221,6 @@
             }
 
             if (syncPayload.length) {
-                // UPSERT: Uses 'name' as key to update existing records or insert new ones
                 const { error } = await sb.from("Tracking").upsert(syncPayload, { onConflict: 'name' });
                 if (error) {
                     alert("Sync failed. Check column headers.");
@@ -239,9 +247,18 @@
 
     function calculateStats() {
         const received = allData.filter(d => d.status === 'received');
+        const daysArray = received.filter(d => d.date_sent && d.date_received).map(d => (new Date(d.date_received) - new Date(d.date_sent)) / 86400000);
+        const avg = daysArray.length ? Math.round(daysArray.reduce((a,b)=>a+b,0)/daysArray.length) : 0;
+        
         document.getElementById('main-total').innerText = allData.length;
         document.getElementById('main-success').innerText = received.length;
         document.getElementById('main-pending').innerText = allData.filter(d => d.status === 'pending').length;
+        document.getElementById('main-avg').innerText = avg;
+        
+        if(document.getElementById('stat-rate')) {
+            document.getElementById('stat-rate').innerText = (allData.length ? Math.round((received.length / allData.length) * 100) : 0) + "%";
+            document.getElementById('stat-avg-large').innerText = avg;
+        }
     }
 
     function renderAddressTable() {
@@ -261,6 +278,13 @@
     function renderGallery() {
         const query = document.getElementById("searchBar").value.toLowerCase();
         let filtered = allData.filter(d => (d.name.toLowerCase().includes(query)) && (currentFilter === 'all' || d.status === currentFilter));
+        
+        filtered.sort((a, b) => {
+            if (currentSort === 'name') return a.name.localeCompare(b.name);
+            if (currentSort === 'sent') return new Date(b.date_sent || 0) - new Date(a.date_sent || 0);
+            if (currentSort === 'received') return new Date(b.date_received || 0) - new Date(a.date_received || 0);
+        });
+
         document.getElementById("galleryGrid").innerHTML = filtered.map(d => {
             const img = (d.images && d.images.length > 0) ? d.images[0] : 'https://via.placeholder.com/300?text=No+Photo';
             return `<div class="item-card" onclick="openProfile('${d.id}')">
@@ -303,10 +327,38 @@
         el.classList.add('active'); renderGallery();
     }
 
+    function setSort(val) { 
+        currentSort = val; 
+        renderGallery(); 
+    }
+
     function switchView(v, isProfile = false) {
         ['summary', 'profile', 'addresses', 'stats'].forEach(view => document.getElementById(`view-${view}`).style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(`view-${v}`).style.display = 'block';
+        if(!isProfile) {
+            const btnMap = {'summary': 'btn-summary', 'stats': 'btn-stats', 'addresses': 'btn-addresses'};
+            if(btnMap[v]) document.getElementById(btnMap[v]).classList.add('active');
+        }
+        if(v === 'stats') renderChart();
         window.scrollTo(0,0);
+    }
+
+    function renderChart() {
+        const ctx = document.getElementById('chartStatus').getContext('2d');
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { 
+                labels: ['Received', 'Pending'], 
+                datasets: [{ 
+                    data: [allData.filter(d=>d.status==='received').length, allData.filter(d=>d.status==='pending').length], 
+                    backgroundColor: ['#4ade80', '#38bdf8'], 
+                    borderWidth: 0 
+                }] 
+            },
+            options: { plugins: { legend: { position: 'bottom', labels: { color: '#f1f5f9' } } } }
+        });
     }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "flex" : "none"; }
