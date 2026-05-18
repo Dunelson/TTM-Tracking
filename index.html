@@ -103,7 +103,7 @@
              <div class="p-image-section">
                 <div class="p-img-frame"><img id="p-img" src=""></div>
                 <div id="p-photo-strip" class="photo-strip"></div>
-                <label class="btn-primary" style="display:block; text-align:center;">
+                <label class="btn-primary" style="display:block; text-align:center; cursor:pointer;">
                     + UPLOAD PHOTO <input type="file" accept="image/*" onchange="uploadToStorage(event)" style="display:none">
                 </label>
             </div>
@@ -190,7 +190,6 @@
         return result;
     }
 
-    // VERIFIED AND ALIGNED DIRECTLY TO YOUR BLUEPRINT COLUMNS
     async function handleCSVUpload(event) {
         const file = event.target.files[0]; if (!file) return;
         const reader = new FileReader();
@@ -208,7 +207,6 @@
                 
                 headers.forEach((h, idx) => {
                     const val = values[idx];
-                    // Clean mapping to ensure matching tracking blueprint keys
                     if (['name', 'role_type', 'known_for', 'address', 'status', 'date_sent', 'date_received', 'source', 'signature_status', 'legitimacy', 'item_type', 'tmdb_id', 'img_url'].includes(h)) {
                         entry[h] = val || null;
                     }
@@ -314,6 +312,41 @@
             main.src = currentItem.images[0];
             strip.innerHTML = currentItem.images.map((img, i) => `<div class="strip-img-wrap"><img src="${img}" class="strip-img" onclick="document.getElementById('p-img').src='${img}'"></div>`).join("");
         } else { main.src = 'https://via.placeholder.com/400?text=No+Photos'; strip.innerHTML = ""; }
+    }
+
+    // FIXED MISSING PHOTO STORAGE ENGINE
+    async function uploadToStorage(event) {
+        const file = event.target.files[0];
+        if (!file || !currentItem) return;
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentItem.id}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Uploads image to your default 'vault' storage bucket
+        const { error: uploadError } = await sb.storage.from('vault').upload(filePath, file);
+        if (uploadError) {
+            alert("Storage upload failed. Make sure your 'vault' bucket exists and is public.");
+            console.error(uploadError);
+            return;
+        }
+
+        // Generates the clean public link asset
+        const { data: publicUrlData } = sb.storage.from('vault').getPublicUrl(filePath);
+        const publicUrl = publicUrlData.publicUrl;
+
+        // Adds link into the profile's images JSON array
+        const currentImages = currentItem.images || [];
+        const updatedImages = [...currentImages, publicUrl];
+
+        const { error: updateError } = await sb.from("Tracking").update({ images: updatedImages }).eq("id", currentItem.id);
+        if (updateError) {
+            console.error(updateError);
+        } else {
+            currentItem.images = updatedImages;
+            renderPhotoStrip();
+            loadData();
+        }
     }
 
     async function updateField(col, val) {
