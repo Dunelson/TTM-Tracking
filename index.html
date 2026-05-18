@@ -314,7 +314,7 @@
         } else { main.src = 'https://via.placeholder.com/400?text=No+Photos'; strip.innerHTML = ""; }
     }
 
-    // FIXED MISSING PHOTO STORAGE ENGINE
+    // UPDATED ENGINE TO EXPLICITLY TARGET THE 'autographs' BUCKET
     async function uploadToStorage(event) {
         const file = event.target.files[0];
         if (!file || !currentItem) return;
@@ -323,16 +323,16 @@
         const fileName = `${currentItem.id}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        // Uploads image to your default 'vault' storage bucket
-        const { error: uploadError } = await sb.storage.from('vault').upload(filePath, file);
+        // Uploads image directly to your specific 'autographs' storage bucket
+        const { error: uploadError } = await sb.storage.from('autographs').upload(filePath, file);
         if (uploadError) {
-            alert("Storage upload failed. Make sure your 'vault' bucket exists and is public.");
+            alert("Storage upload failed. Ensure your 'autographs' bucket has an insert policy configured.");
             console.error(uploadError);
             return;
         }
 
         // Generates the clean public link asset
-        const { data: publicUrlData } = sb.storage.from('vault').getPublicUrl(filePath);
+        const { data: publicUrlData } = sb.storage.from('autographs').getPublicUrl(filePath);
         const publicUrl = publicUrlData.publicUrl;
 
         // Adds link into the profile's images JSON array
