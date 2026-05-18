@@ -49,10 +49,12 @@
         .modal-content { background: var(--card-bg); border-radius: 15px; padding: 25px; width: 100%; max-width: 400px; }
         select, input, textarea { background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 8px; padding: 12px; font-family: inherit; font-size: 14px; }
         
-        .p-image-section { position: sticky; top: 80px; }
-        /* FIXED: Added clear overflow-y scroll for tall images and kept layout contained */
-        .p-img-frame { width: 100%; height: 450px; max-height: 70vh; border-radius: 12px; overflow-y: auto; background: #000; border: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: center; }
-        .p-img-frame img { width: 100%; height: auto; display: block; object-fit: contain; }
+        /* FIXED: Removed layout sticky properties that broke layout scrolling */
+        .p-image-section { position: relative; width: 100%; }
+        
+        /* FIXED: Constrained the framework to fit cleanly into view layouts without causing parent scroll breaks */
+        .p-img-frame { width: 100%; max-height: 400px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; }
+        .p-img-frame img { width: 100%; height: 100%; max-height: 400px; display: block; object-fit: contain; }
 
         .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; }
         .strip-img-wrap { position: relative; flex-shrink: 0; }
@@ -309,7 +311,6 @@
         document.getElementById("p-source-select").innerHTML = '<option value="TTM">TTM</option><option value="Purchased">Purchased</option>';
         document.getElementById("p-source-select").value = currentItem.source || "TTM";
         
-        // Populate dates (or keep blank if null)
         document.getElementById("p-sent-date").value = currentItem.date_sent || "";
         document.getElementById("p-received-date").value = currentItem.date_received || "";
         
@@ -356,7 +357,6 @@
     }
 
     async function updateField(col, val) {
-        // Fallback to null if date is completely cleared out
         const finalVal = val === "" ? null : val;
         await sb.from("Tracking").update({ [col]: finalVal }).eq("id", currentItem.id);
         loadData();
@@ -405,7 +405,6 @@
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "flex" : "none"; }
     
     async function addEntry() {
-        // Initial setup keeps dates empty until you manually select them on profile edit screen
         const entry = { 
             name: document.getElementById("f_name").value, 
             role_type: document.getElementById("f_role").value, 
