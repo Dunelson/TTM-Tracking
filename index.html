@@ -178,7 +178,6 @@
         renderAddressTable();
     }
 
-    // AGGRESSIVE ENGINE: Dynamically splits by either comma or semicolon and clears invisible character blocks
     function parseFlexibleCSV(text) {
         const lines = text.split(/\r?\n/);
         return lines.map(line => {
@@ -213,69 +212,79 @@
     }
 
     async function handleCSVUpload(event) {
-        const file = event.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const rawRows = parseFlexibleCSV(e.target.result);
-            if (rawRows.length < 2) return;
-
-            // Strip completely everything except lowercase a-z letters to defeat invisible Excel characters
-            const headers = rawRows[0].map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
-            const syncPayload = [];
-
-            // Cross-reference lookup maps to find headers even if cut off or changed
-            const fieldMapping = {
-                'name': 'name',
-                'roletype': 'role_type', 'role': 'role_type', 'bio': 'role_type',
-                'knownfor': 'known_for',
-                'address': 'address', 'notes': 'address',
-                'status': 'status',
-                'source': 'source',
-                'datesent': 'date_sent', 'sent': 'date_sent', 'datesen': 'date_sent',
-                'datereceived': 'date_received', 'received': 'date_received', 'daterece': 'date_received', 'daterec': 'date_received'
-            };
-
-            for (let i = 1; i < rawRows.length; i++) {
-                const values = rawRows[i];
-                if (values.length === 0 || (values.length === 1 && values[0] === "")) continue;
-                
-                const entry = {};
-                headers.forEach((rawHeader, idx) => {
-                    const mappedKey = fieldMapping[rawHeader];
-                    if (mappedKey) {
-                        let val = values[idx];
-                        if (val && (val.startsWith('"') && val.endsWith('"'))) {
-                            val = val.substring(1, val.length - 1).trim();
-                        }
-                        if (mappedKey === 'date_sent' || mappedKey === 'date_received') {
-                            entry[mappedKey] = cleanCSVDate(val);
-                        } else {
-                            entry[mappedKey] = val || null;
-                        }
-                    }
-                });
-
-                // Fail-safe protection: ensure a name is parsed before pushing to database payload
-                if (entry.name) {
-                    if (!entry.status) entry.status = 'pending';
-                    syncPayload.push(entry);
+        try {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const rawRows = parseFlexibleCSV(e.target.result);
+                if (rawRows.length < 2) {
+                    alert("Upload aborted: File doesn't have enough lines of data.");
+                    return;
                 }
-            }
 
-            if (syncPayload.length) {
+                const headers = rawRows[0].map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
+                const syncPayload = [];
+
+                const fieldMapping = {
+                    'name': 'name',
+                    'roletype': 'role_type', 'role': 'role_type', 'bio': 'role_type',
+                    'knownfor': 'known_for',
+                    'address': 'address', 'notes': 'address',
+                    'status': 'status',
+                    'source': 'source',
+                    'datesent': 'date_sent', 'sent': 'date_sent', 'datesen': 'date_sent',
+                    'datereceived': 'date_received', 'received': 'date_received', 'daterece': 'date_received', 'daterec': 'date_received'
+                };
+
+                // Filter valid payload properties down explicitly to core schema parameters
+                const supabaseColumns = ['name', 'role_type', 'known_for', 'address', 'status', 'date_sent', 'date_received', 'source'];
+
+                for (let i = 1; i < rawRows.length; i++) {
+                    const values = rawRows[i];
+                    if (values.length === 0 || (values.length === 1 && values[0] === "")) continue;
+                    
+                    const entry = {};
+                    headers.forEach((rawHeader, idx) => {
+                        const mappedKey = fieldMapping[rawHeader];
+                        if (mappedKey && supabaseColumns.includes(mappedKey)) {
+                            let val = values[idx];
+                            if (val && (val.startsWith('"') && val.endsWith('"'))) {
+                                val = val.substring(1, val.length - 1).trim();
+                            }
+                            if (mappedKey === 'date_sent' || mappedKey === 'date_received') {
+                                entry[mappedKey] = cleanCSVDate(val);
+                            } else {
+                                entry[mappedKey] = val || null;
+                            }
+                        }
+                    });
+
+                    if (entry.name) {
+                        if (!entry.status) entry.status = 'pending';
+                        else entry.status = entry.status.toLowerCase().trim();
+                        syncPayload.push(entry);
+                    }
+                }
+
+                if (syncPayload.length === 0) {
+                    alert("Diagnostic Notice:\nNo rows parsed. Detected headers were:\n[" + headers.join(", ") + "].\nEnsure your 'name' column exists.");
+                    return;
+                }
+
+                // Push payload straight up to database
                 const { error } = await sb.from("Tracking").upsert(syncPayload, { onConflict: 'name' });
                 if (error) {
-                    alert("Database sync failed. Please check your data values.");
+                    alert("Database Sync Failure:\n" + error.message + "\nDetails: " + (error.details || "None"));
                     console.error(error);
                 } else {
-                    alert(`Sync Success! Processed ${syncPayload.length} records.`);
+                    alert(`Sync Success! Processed ${syncPayload.length} records smoothly.`);
                     loadData();
                 }
-            } else {
-                alert("Error: Couldn't read a valid 'name' column in your file header.");
-            }
-        };
-        reader.readAsText(file);
+            };
+            reader.readAsText(file);
+        } catch(err) {
+            alert("App Processing Error:\n" + err.message);
+        }
     }
 
     function exportToCSV() {
