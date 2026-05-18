@@ -50,8 +50,9 @@
         select, input, textarea { background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 8px; padding: 12px; font-family: inherit; font-size: 14px; }
         
         .p-image-section { position: sticky; top: 80px; }
-        .p-img-frame { width: 100%; max-height: 450px; border-radius: 12px; overflow: hidden; background: #000; border: 1px solid var(--border); }
-        .p-img-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        /* FIXED: Added clear overflow-y scroll for tall images and kept layout contained */
+        .p-img-frame { width: 100%; height: 450px; max-height: 70vh; border-radius: 12px; overflow-y: auto; background: #000; border: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: center; }
+        .p-img-frame img { width: 100%; height: auto; display: block; object-fit: contain; }
 
         .photo-strip { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; }
         .strip-img-wrap { position: relative; flex-shrink: 0; }
@@ -116,6 +117,10 @@
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px;">
                     <div><span class="field-label">Status</span><select id="p-status-select" onchange="updateField('status', this.value)" style="width:100%;"></select></div>
                     <div><span class="field-label">Source</span><select id="p-source-select" onchange="updateField('source', this.value)" style="width:100%;"></select></div>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px;">
+                    <div><span class="field-label">Date Sent</span><input type="date" id="p-sent-date" onchange="updateField('date_sent', this.value)" style="width:100%; box-sizing:border-box;"></div>
+                    <div><span class="field-label">Date Received</span><input type="date" id="p-received-date" onchange="updateField('date_received', this.value)" style="width:100%; box-sizing:border-box;"></div>
                 </div>
                 <div class="field-group">
                     <span class="field-label">Address / Notes</span>
@@ -303,6 +308,11 @@
         document.getElementById("p-status-select").value = currentItem.status;
         document.getElementById("p-source-select").innerHTML = '<option value="TTM">TTM</option><option value="Purchased">Purchased</option>';
         document.getElementById("p-source-select").value = currentItem.source || "TTM";
+        
+        // Populate dates (or keep blank if null)
+        document.getElementById("p-sent-date").value = currentItem.date_sent || "";
+        document.getElementById("p-received-date").value = currentItem.date_received || "";
+        
         renderPhotoStrip();
     }
 
@@ -314,7 +324,6 @@
         } else { main.src = 'https://via.placeholder.com/400?text=No+Photos'; strip.innerHTML = ""; }
     }
 
-    // UPDATED ENGINE TO EXPLICITLY TARGET THE 'autographs' BUCKET
     async function uploadToStorage(event) {
         const file = event.target.files[0];
         if (!file || !currentItem) return;
@@ -323,7 +332,6 @@
         const fileName = `${currentItem.id}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        // Uploads image directly to your specific 'autographs' storage bucket
         const { error: uploadError } = await sb.storage.from('autographs').upload(filePath, file);
         if (uploadError) {
             alert("Storage upload failed. Ensure your 'autographs' bucket has an insert policy configured.");
@@ -331,11 +339,9 @@
             return;
         }
 
-        // Generates the clean public link asset
         const { data: publicUrlData } = sb.storage.from('autographs').getPublicUrl(filePath);
         const publicUrl = publicUrlData.publicUrl;
 
-        // Adds link into the profile's images JSON array
         const currentImages = currentItem.images || [];
         const updatedImages = [...currentImages, publicUrl];
 
@@ -350,7 +356,9 @@
     }
 
     async function updateField(col, val) {
-        await sb.from("Tracking").update({ [col]: val }).eq("id", currentItem.id);
+        // Fallback to null if date is completely cleared out
+        const finalVal = val === "" ? null : val;
+        await sb.from("Tracking").update({ [col]: finalVal }).eq("id", currentItem.id);
         loadData();
     }
 
@@ -395,8 +403,18 @@
     }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? "flex" : "none"; }
+    
     async function addEntry() {
-        const entry = { name: document.getElementById("f_name").value, role_type: document.getElementById("f_role").value, address: document.getElementById("f_address").value, status: 'pending', images: [] };
+        // Initial setup keeps dates empty until you manually select them on profile edit screen
+        const entry = { 
+            name: document.getElementById("f_name").value, 
+            role_type: document.getElementById("f_role").value, 
+            address: document.getElementById("f_address").value, 
+            status: 'pending', 
+            images: [],
+            date_sent: null,
+            date_received: null
+        };
         await sb.from("Tracking").insert([entry]);
         toggleModal('addModal', false); loadData();
     }
