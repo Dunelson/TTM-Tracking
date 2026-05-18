@@ -204,9 +204,13 @@
         });
     }
 
+    // ADVANCED DATE SANITIZATION: Forcefully filters out Excel visual corruption symbols (###)
     function cleanCSVDate(dateStr) {
-        if (!dateStr || dateStr.toLowerCase().includes('#') || dateStr.trim() === "") return null;
-        const d = new Date(dateStr);
+        if (!dateStr) return null;
+        let cleanStr = dateStr.toString().trim();
+        if (cleanStr === "" || cleanStr.includes('#') || cleanStr.toLowerCase().includes('null')) return null;
+        
+        const d = new Date(cleanStr);
         if (isNaN(d.getTime())) return null;
         return d.toISOString().split('T')[0];
     }
@@ -218,7 +222,7 @@
             reader.onload = async function(e) {
                 const rawRows = parseFlexibleCSV(e.target.result);
                 if (rawRows.length < 2) {
-                    alert("Upload aborted: File doesn't have enough lines of data.");
+                    alert("Upload aborted: File has no lines data.");
                     return;
                 }
 
@@ -236,7 +240,6 @@
                     'datereceived': 'date_received', 'received': 'date_received', 'daterece': 'date_received', 'daterec': 'date_received'
                 };
 
-                // Filter valid payload properties down explicitly to core schema parameters
                 const supabaseColumns = ['name', 'role_type', 'known_for', 'address', 'status', 'date_sent', 'date_received', 'source'];
 
                 for (let i = 1; i < rawRows.length; i++) {
@@ -259,9 +262,20 @@
                         }
                     });
 
-                    if (entry.name) {
-                        if (!entry.status) entry.status = 'pending';
-                        else entry.status = entry.status.toLowerCase().trim();
+                    if (entry.name && entry.name.trim() !== "") {
+                        entry.name = entry.name.trim();
+                        
+                        if (entry.status) {
+                            let cleanStatus = entry.status.toLowerCase().trim();
+                            if (cleanStatus === 'pending' || cleanStatus === 'received' || cleanStatus === 'rts') {
+                                entry.status = cleanStatus;
+                            } else {
+                                entry.status = 'pending';
+                            }
+                        } else {
+                            entry.status = 'pending';
+                        }
+                        
                         syncPayload.push(entry);
                     }
                 }
@@ -271,7 +285,6 @@
                     return;
                 }
 
-                // Push payload straight up to database
                 const { error } = await sb.from("Tracking").upsert(syncPayload, { onConflict: 'name' });
                 if (error) {
                     alert("Database Sync Failure:\n" + error.message + "\nDetails: " + (error.details || "None"));
